@@ -1,0 +1,68 @@
+import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
+import { db } from "@/lib/db";
+import type { PlanId } from "@/lib/plans";
+
+// Stripe Payment Links carry a `client_reference_id` set to the business's
+// id (the dashboard's billing page appends it — see billing/page.tsx). When
+// checkout completes, Stripe calls this webhook and we flip that business's
+// plan on. Configure this URL (https://quelens.com/api/stripe/webhook) in
+// the Stripe Dashboard → Developers → Webhooks, listening for
+// checkout.session.completed and customer.subscription.deleted.
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", { apiVersion: "2024-06-20" });
+
+// Map a Stripe Payment Link's price/product id to our PlanId. Fill this in
+// with the actual ids from your Stripe Dashboard once you've created the
+// three Payment Links — until then, the webhook can't tell WHICH plan was
+// bought (see handoff notes).
+const PRICE_TO_PLAN: Record<string, PlanId> = {
+  // "price_XXXXXXXXXXXXXX": "STARTER",
+  // "price_YYYYYYYYYYYYYY": "STANDARD",
+  // "price_ZZZZZZZZZZZZZZ": "PROFESSIONAL",
+};
+
+export async function POST(req: NextRequest) {
+  const sig = req.headers.get("stripe-signature");
+  const rawBody = await req.text();
+
+  let event: Stripe.Event;
+  try {
+    event = stripe.webhooks.constructEvent(rawBody, sig!, process.env.STRIPE_WEBHOOK_SECRET!);
+  } catch (err: any) {
+    console.error("Stripe signature verification failed:", err.message);
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+  }
+
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object as Stripe.Checkout.Session;
+    const businessId = session.client_reference_id;
+    if (!businessId) {
+      console.warn("Checkout completed with no client_reference_id — can't attribute plan.");
+      return NextResponse.json({ received: true });
+    }
+    const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+    const priceId = lineItems.data[0]?.price?.id;
+    const plan = priceId ? PRICE_TO_PLAN[priceId] : undefined;
+
+    await db.business.update({
+      where: { id: businessId },
+      data: {
+        plan: plan ?? "STARTER", // falls back to Starter if the price map above isn't filled in yet
+        planRenewsAt: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000),
+        stripeCustomerId: typeof session.customer === "string" ? session.customer : undefined,
+      },
+    });
+  }
+
+  if (event.type === "customer.subscription.deleted") {
+    const sub = event.data.object as Stripe.Subscription;
+    const business = await db.business.findFirst({ where: { stripeCustomerId: sub.customer as string } });
+    if (business) {
+      await db.business.update({ where: { id: business.id }, data: { plan: "NONE" } });
+      await db.hub.updateMany({ where: { businessId: business.id }, data: { isPublic: false } });
+    }
+  }
+
+  return NextResponse.json({ received: true });
+}

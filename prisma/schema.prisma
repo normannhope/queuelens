@@ -1,0 +1,119 @@
+// Queue Lens — database schema
+// Provider: PostgreSQL (Neon, Supabase, or Vercel Postgres all work unchanged).
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Businesses (developer/customer-of-QueueLens side) ----------
+
+model Business {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  plan         Plan     @default(NONE)
+  planRenewsAt DateTime?
+  stripeCustomerId String?
+  apiKey       String   @unique @default(cuid()) // used for embed/API auth on private hubs
+  createdAt    DateTime @default(now())
+  hubs         Hub[]
+}
+
+enum Plan {
+  NONE       // signed up, not paying — hubs cannot go live
+  STARTER    // ~149 NOK/mo — analysis every 30 min
+  STANDARD   // ~500 NOK/mo — analysis every 10 min
+  PROFESSIONAL // ~1600 NOK/mo — analysis every 2 min (cadence, prices: see lib/plans.ts)
+}
+
+// ---------- Hubs (one physical queue/location a business monitors) ----------
+
+model Hub {
+  id            String   @id @default(cuid())
+  slug          String   @unique // public URL + directory identity, e.g. "oslo-central-bakery"
+  name          String
+  address       String?
+  category      String?  // "bakery", "clinic", "barbershop", etc — used for directory filtering
+  webcamUrl     String   // direct image-snapshot URL (jpg/png), not a viewer page
+  instructions  String?  // optional plain-language hint for the AI ("count people past the red line")
+  isPublic      Boolean  @default(false) // must be true to appear in directory / be readable via public embed
+  businessId    String
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+
+  lastAnalyzedAt DateTime?
+  latestLevel    QueueLevel? // denormalized for fast directory reads
+  latestCount    Int?
+  latestWaitMin  Int?
+  latestSummary  String?
+
+  analyses      Analysis[]
+  pins          Pin[]
+}
+
+enum QueueLevel {
+  EMPTY
+  SHORT
+  MEDIUM
+  LONG
+  UNKNOWN
+}
+
+model Analysis {
+  id         String     @id @default(cuid())
+  hubId      String
+  hub        Hub        @relation(fields: [hubId], references: [id], onDelete: Cascade)
+  level      QueueLevel
+  count      Int?
+  waitMin    Int?
+  summary    String
+  createdAt  DateTime   @default(now())
+
+  @@index([hubId, createdAt])
+}
+
+// ---------- Customers (public/free side) ----------
+
+model Customer {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  passwordHash      String
+  createdAt         DateTime @default(now())
+  pins              Pin[]
+  pushSubscriptions PushSubscription[]
+}
+
+// One row per device/browser a customer has enabled notifications on (a
+// phone and a laptop are two rows). Populated by the "Enable notifications"
+// button on /account after they've added the site to their home screen —
+// see public/sw.js and src/lib/push.ts. No email, no third-party service:
+// this is the free, standards-based Web Push API talking straight to the
+// browser vendor's own push service.
+model PushSubscription {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  endpoint   String   @unique
+  p256dh     String
+  auth       String
+  createdAt  DateTime @default(now())
+}
+
+model Pin {
+  id                String   @id @default(cuid())
+  customerId        String
+  customer          Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  hubId             String
+  hub               Hub      @relation(fields: [hubId], references: [id], onDelete: Cascade)
+  notifyEnabled     Boolean  @default(false)
+  notifyBelowLevel  QueueLevel @default(SHORT) // notify when queue drops to this level or below
+  lastNotifiedAt    DateTime?
+  createdAt         DateTime @default(now())
+
+  @@unique([customerId, hubId])
+}

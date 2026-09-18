@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --logo-ring: #5fcfc4;
+  --logo-bar: #f2a93b;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-paper text-ink font-body;
+}
+
+.dark body {
+  @apply bg-ink text-paper;
+}
+
+::selection {
+  background: theme("colors.amber.DEFAULT");
+  color: theme("colors.ink.DEFAULT");
+}
+
+.container-page {
+  @apply mx-auto w-full max-w-6xl px-5;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-colors;
+}
+.btn-primary {
+  @apply btn bg-ink text-paper hover:bg-ink-soft dark:bg-amber dark:text-ink dark:hover:opacity-90;
+}
+.btn-ghost {
+  @apply btn border border-ink/15 text-ink hover:bg-ink/5 dark:border-paper/20 dark:text-paper dark:hover:bg-paper/10;
+}
+.card {
+  @apply rounded-xl2 border border-ink/10 bg-paper-soft/60 p-6 dark:border-paper/10 dark:bg-ink-soft;
+}
+.field {
+  @apply w-full rounded-lg border border-ink/15 bg-paper px-3.5 py-2.5 text-sm outline-none focus:border-cyan dark:border-paper/15 dark:bg-ink;
+}
+.label {
+  @apply mb-1.5 block text-sm font-medium text-ink/70 dark:text-paper/70;
+}

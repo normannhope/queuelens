@@ -1,0 +1,14 @@
+{
+  "name": "Queue Lens",
+  "short_name": "Queue Lens",
+  "description": "See the line before you leave the house.",
+  "start_url": "/directory",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0E1716",
+  "theme_color": "#0E1716",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

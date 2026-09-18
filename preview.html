@@ -1,0 +1,171 @@
+<title>Queue Lens Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1716; --ink-soft:#152220; --ink-line:#24342F;
+    --paper:#FAF8F3; --paper-soft:#F1EDE3;
+    --amber:#F2A93B; --cyan:#5FCFC4;
+    --empty:#5FCFC4; --short:#8FBF6B; --medium:#F2A93B; --long:#E2604F;
+    --bg: var(--paper); --fg: var(--ink); --card: var(--paper-soft); --line: rgba(14,23,22,.12); --muted: rgba(14,23,22,.6);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){ --bg: var(--ink); --fg: var(--paper); --card: var(--ink-soft); --line: rgba(250,248,243,.12); --muted: rgba(250,248,243,.6); }
+  }
+  :root[data-theme="dark"]{ --bg: var(--ink); --fg: var(--paper); --card: var(--ink-soft); --line: rgba(250,248,243,.12); --muted: rgba(250,248,243,.6); }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',system-ui,sans-serif;padding-inline:16px}
+  .wrap{max-width:1080px;margin:0 auto}
+  h1,h2,h3{font-family:'Bricolage Grotesque',Georgia,serif;margin:0;letter-spacing:-0.01em}
+  .mono{font-family:'IBM Plex Mono',monospace}
+  header{display:flex;align-items:center;justify-content:space-between;padding-block:28px;flex-wrap:wrap;gap:12px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:1.15rem}
+  .navbtn{border:1px solid var(--line);border-radius:999px;padding:9px 18px;font-size:.9rem;text-decoration:none;color:var(--fg);white-space:nowrap}
+  .navbtn.primary{background:var(--amber);color:var(--ink);border-color:transparent;font-weight:600}
+  section{padding-block:56px}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:.75rem;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);margin:0 0 14px}
+  h1.hero{font-size:clamp(2.1rem,5.4vw,3.4rem);line-height:1.06;max-width:720px;text-wrap:balance}
+  .accent{color:var(--amber)}
+  p.lede{max-width:520px;color:var(--muted);font-size:1.05rem;margin-top:18px}
+  .ctas{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap}
+  .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:40px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px}
+  .cat{font-family:'IBM Plex Mono',monospace;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .badge{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:6px 13px;font-size:.85rem;font-weight:500;margin-top:12px}
+  .badge .dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+  .b-empty{background:color-mix(in srgb, var(--empty) 16%, transparent);color:var(--empty)}
+  .b-short{background:color-mix(in srgb, var(--short) 16%, transparent);color:var(--short)}
+  .b-medium{background:color-mix(in srgb, var(--medium) 18%, transparent);color:var(--medium)}
+  .b-long{background:color-mix(in srgb, var(--long) 16%, transparent);color:var(--long)}
+  .fade{opacity:0;transform:translateY(14px);transition:opacity .55s cubic-bezier(.22,1,.36,1),transform .55s cubic-bezier(.22,1,.36,1)}
+  .fade.in{opacity:1;transform:none}
+  .divider{border-top:1px solid var(--line);margin-top:8px}
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:28px;margin-top:32px}
+  .step .n{color:var(--amber);font-family:'IBM Plex Mono',monospace;font-size:.85rem}
+  .plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:32px}
+  .plan{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px;display:flex;flex-direction:column}
+  .price{font-family:'IBM Plex Mono',monospace;font-size:1.9rem;font-weight:600;margin:10px 0}
+  .price small{font-size:.9rem;color:var(--muted);font-weight:400}
+  .tabs{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px;gap:2px}
+  .tab{border:none;background:transparent;color:var(--fg);padding:8px 16px;border-radius:999px;font-size:.85rem;cursor:pointer;font-family:inherit}
+  .tab.active{background:var(--amber);color:var(--ink);font-weight:600}
+  .panel{display:none;margin-top:28px}
+  .panel.active{display:block}
+  .hubrow{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--line)}
+  .pill{font-size:.75rem;padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+  footer{color:var(--muted);font-size:.85rem;padding-block:36px;border-top:1px solid var(--line);margin-top:20px}
+  .note{max-width:640px;margin:14px 0 0;color:var(--muted);font-size:.85rem}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <svg width="30" height="30" viewBox="0 0 48 48"><circle cx="24" cy="24" r="19" stroke="#5FCFC4" stroke-width="3.4" fill="none"/><circle cx="24" cy="24" r="19" stroke="#5FCFC4" stroke-width="3.4" stroke-dasharray="2 6" opacity="0.5" fill="none"/><rect x="14" y="27" width="3.2" height="9" rx="1" fill="#F2A93B"/><rect x="19" y="23" width="3.2" height="13" rx="1" fill="#F2A93B"/><rect x="24" y="19" width="3.2" height="17" rx="1" fill="#F2A93B"/><rect x="29" y="15.5" width="3.2" height="20.5" rx="1" fill="#F2A93B"/></svg>
+      Queue<span style="color:var(--cyan)">Lens</span>
+    </div>
+    <nav style="display:flex;gap:8px">
+      <a class="navbtn" href="#directory-preview">Find a queue</a>
+      <a class="navbtn primary" href="#plans">For businesses</a>
+    </nav>
+  </header>
+
+  <section>
+    <div class="fade in">
+      <p class="eyebrow">AI queue analysis, from a public webcam</p>
+      <h1 class="hero">See the line <span class="accent">before</span> you leave the house.</h1>
+      <p class="lede">Point Queue Lens at any public webcam feed. Claude reads the frame, estimates the wait, and keeps your customers — or anyone browsing the directory — one glance from knowing whether now's a good time to go.</p>
+      <div class="ctas">
+        <a class="navbtn primary" href="#plans">Add your business</a>
+        <a class="navbtn" href="#directory-preview">Browse live queues</a>
+      </div>
+    </div>
+
+    <div class="grid3">
+      <div class="card fade" data-cat="Barbershop" data-name="Bergen Cut &amp; Shave" data-level="short" data-wait="8 min wait"></div>
+      <div class="card fade" data-cat="Bakery" data-name="Nidaros Bakeri" data-level="empty" data-wait="no wait"></div>
+      <div class="card fade" data-cat="Clinic" data-name="Sentrum Legevakt" data-level="long" data-wait="34 min wait"></div>
+    </div>
+    <p class="note">Example data — the live directory fills in once real hubs go public.</p>
+  </section>
+
+  <section style="border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+    <h2 class="fade" style="font-size:1.8rem">How it works</h2>
+    <div class="steps">
+      <div class="step fade"><p class="n">1</p><h3 style="font-size:1.15rem;margin-top:8px">Import the feed</h3><p style="color:var(--muted);margin-top:8px">Paste a public webcam snapshot URL for your queue, counter, or waiting area.</p></div>
+      <div class="step fade"><p class="n">2</p><h3 style="font-size:1.15rem;margin-top:8px">Claude reads it</h3><p style="color:var(--muted);margin-top:8px">On your plan's schedule, Claude looks at the frame and estimates count, wait time, and a plain-language read.</p></div>
+      <div class="step fade"><p class="n">3</p><h3 style="font-size:1.15rem;margin-top:8px">Share the status</h3><p style="color:var(--muted);margin-top:8px">Show it on your own site with the embed snippet, or flip it public and it joins the directory.</p></div>
+    </div>
+  </section>
+
+  <section id="directory-preview">
+    <h2 class="fade" style="font-size:1.8rem">Try both sides of the product</h2>
+    <p class="note">This whole section is a click-through preview — sample data, real interactions.</p>
+    <div class="tabs" style="margin-top:20px">
+      <button class="tab active" data-panel="customer">Customer directory</button>
+      <button class="tab" data-panel="business">Business dashboard</button>
+    </div>
+
+    <div class="panel active" id="panel-customer">
+      <div class="hubrow"><div><strong>Bergen Cut &amp; Shave</strong><div class="cat">Barbershop</div></div><span class="badge b-short"><span class="dot"></span>Short line · ~8 min</span></div>
+      <div class="hubrow"><div><strong>Nidaros Bakeri</strong><div class="cat">Bakery</div></div><span class="badge b-empty"><span class="dot"></span>No line</span></div>
+      <div class="hubrow"><div><strong>Sentrum Legevakt</strong><div class="cat">Clinic</div></div><span class="badge b-long"><span class="dot"></span>Long line · ~34 min</span></div>
+      <div class="hubrow" style="border-bottom:none"><div><strong>Marina Fjordbad</strong><div class="cat">Pool / spa</div></div><span class="badge b-medium"><span class="dot"></span>Moderate · ~15 min</span></div>
+    </div>
+
+    <div class="panel" id="panel-business">
+      <div class="card" style="margin-top:0">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong>Bergen Cut &amp; Shave</strong>
+          <span class="pill">Public</span>
+        </div>
+        <div style="margin-top:12px"><span class="badge b-short"><span class="dot"></span>Short line · ~8 min</span></div>
+        <p style="color:var(--muted);font-size:.9rem;margin-top:10px">3 people waiting, one chair open. Fine time to walk in.</p>
+        <div class="divider" style="margin-top:16px"></div>
+        <p class="mono" style="font-size:.75rem;color:var(--muted);margin-top:14px">EMBED SNIPPET</p>
+        <pre style="background:var(--ink);color:var(--paper);border-radius:10px;padding:12px 14px;font-size:.72rem;overflow-x:auto;margin-top:6px">&lt;script src="https://quelens.com/api/embed/bergen-cut-shave/widget.js" async&gt;&lt;/script&gt;</pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="plans">
+    <h2 class="fade" style="font-size:1.8rem">Plans — businesses only</h2>
+    <p class="note">Customers browse and get alerts for free, always.</p>
+    <div class="plans">
+      <div class="plan fade"><h3 style="font-size:1.2rem">Starter</h3><div class="price">149 <small>NOK/mo</small></div><p style="color:var(--muted);font-size:.92rem;flex:1">A fresh read every 5 minutes. Good for one location, low-traffic hours.</p><a class="navbtn primary" href="#" style="margin-top:16px;text-align:center">Get started</a></div>
+      <div class="plan fade"><h3 style="font-size:1.2rem">Standard</h3><div class="price">500 <small>NOK/mo</small></div><p style="color:var(--muted);font-size:.92rem;flex:1">10-minute cadence with priority processing when things get busy.</p><a class="navbtn primary" href="#" style="margin-top:16px;text-align:center">Get started</a></div>
+      <div class="plan fade"><h3 style="font-size:1.2rem">Professional</h3><div class="price">1600 <small>NOK/mo</small></div><p style="color:var(--muted);font-size:.92rem;flex:1">The fastest cadence available — analyzed on every check-in cycle.</p><a class="navbtn primary" href="#" style="margin-top:16px;text-align:center">Get started</a></div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap" style="padding:0;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <span>Queue Lens — visual preview</span>
+      <span>Real, working codebase is in the files sent alongside this.</span>
+    </div>
+  </footer>
+</div>
+
+<script>
+  document.querySelectorAll('.card[data-name]').forEach(function(c){
+    var lvl = c.getAttribute('data-level');
+    var labels = {empty:'No line',short:'Short line',medium:'Moderate line',long:'Long line'};
+    c.innerHTML = '<div class="cat">' + c.getAttribute('data-cat') + '</div>' +
+      '<h3 style="font-size:1.05rem;margin-top:8px">' + c.getAttribute('data-name') + '</h3>' +
+      '<span class="badge b-' + lvl + '"><span class="dot"></span>' + labels[lvl] + ' · ' + c.getAttribute('data-wait') + '</span>';
+  });
+
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if(e.isIntersecting) e.target.classList.add('in'); });
+  }, {threshold:.15});
+  document.querySelectorAll('.fade').forEach(function(el){ io.observe(el); });
+
+  document.querySelectorAll('.tab').forEach(function(t){
+    t.addEventListener('click', function(){
+      document.querySelectorAll('.tab').forEach(function(x){ x.classList.remove('active'); });
+      document.querySelectorAll('.panel').forEach(function(x){ x.classList.remove('active'); });
+      t.classList.add('active');
+      document.getElementById('panel-' + t.dataset.panel).classList.add('active');
+    });
+  });
+</script>
