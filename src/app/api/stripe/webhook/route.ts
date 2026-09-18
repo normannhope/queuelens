@@ -20,14 +20,12 @@ function getStripe(): Stripe | null {
   return new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-02-24.acacia" });
 }
 
-// Map a Stripe Payment Link's price/product id to our PlanId. Fill this in
-// with the actual ids from your Stripe Dashboard once you've created the
-// three Payment Links — until then, the webhook can't tell WHICH plan was
-// bought (see handoff notes).
+// Maps each Stripe Price id (test mode, created via the Stripe MCP
+// connector) to our PlanId, so the webhook knows which plan was bought.
 const PRICE_TO_PLAN: Record<string, PlanId> = {
-  // "price_XXXXXXXXXXXXXX": "STARTER",
-  // "price_YYYYYYYYYYYYYY": "STANDARD",
-  // "price_ZZZZZZZZZZZZZZ": "PROFESSIONAL",
+  "price_1UH6tcLAENXmMsjlRgCRKtox": "STARTER",
+  "price_1UH6teLAENXmMsjl0vSkw9Qc": "STANDARD",
+  "price_1UH6tfLAENXmMsjlFRLwkbNx": "PROFESSIONAL",
 };
 
 export async function POST(req: NextRequest) {
