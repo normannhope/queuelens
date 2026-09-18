@@ -28,9 +28,23 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!hub) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json();
-  const allowed = ["name", "address", "category", "webcamUrl", "instructions", "isPublic"];
+  const allowed = [
+    "name",
+    "address",
+    "category",
+    "webcamUrl",
+    "instructions",
+    "isPublic",
+    "activeHoursEnabled",
+    "activeStartHour",
+    "activeEndHour",
+    "utcOffsetMinutes",
+  ];
   const data: Record<string, unknown> = {};
   for (const k of allowed) if (k in body) data[k] = body[k];
+
+  if (typeof data.activeStartHour === "number") data.activeStartHour = Math.min(23, Math.max(0, data.activeStartHour));
+  if (typeof data.activeEndHour === "number") data.activeEndHour = Math.min(24, Math.max(1, data.activeEndHour));
 
   const updated = await db.hub.update({ where: { id: hub.id }, data });
   return NextResponse.json({ hub: updated });

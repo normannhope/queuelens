@@ -52,6 +52,17 @@ model Hub {
   latestWaitMin  Int?
   latestSummary  String?
 
+  // Optional "active hours" schedule — lets a business stop paying for
+  // analysis overnight/when closed. Off (activeHoursEnabled = false) means
+  // "always on", the original behavior. Hours are in the business's own
+  // clock; utcOffsetMinutes converts to/from UTC for the cron check. This
+  // doesn't handle daylight-saving shifts — a business just nudges the
+  // offset dropdown twice a year if that matters to them.
+  activeHoursEnabled Boolean @default(false)
+  activeStartHour    Int     @default(0)  // 0-23, inclusive
+  activeEndHour      Int     @default(24) // 1-24, exclusive (24 = runs through midnight)
+  utcOffsetMinutes   Int     @default(0)
+
   analyses      Analysis[]
   pins          Pin[]
 }
