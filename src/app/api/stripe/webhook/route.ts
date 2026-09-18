@@ -10,7 +10,7 @@ import type { PlanId } from "@/lib/plans";
 // the Stripe Dashboard → Developers → Webhooks, listening for
 // checkout.session.completed and customer.subscription.deleted.
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", { apiVersion: "2024-06-20" });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", { apiVersion: "2025-02-24.acacia" });
 
 // Map a Stripe Payment Link's price/product id to our PlanId. Fill this in
 // with the actual ids from your Stripe Dashboard once you've created the
