@@ -10,7 +10,17 @@ import type { QueueLevel } from "@prisma/client";
 // a timer, which is the whole reason this is a real deployed app and not
 // just a page on claude.ai (see the handoff notes).
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// Built lazily, on first real use — not at module import — so importing
+// this file (which happens indirectly on every build, via runAnalysis.ts)
+// never crashes even if ANTHROPIC_API_KEY is momentarily unset.
+let anthropic: Anthropic | null = null;
+function getAnthropic(): Anthropic {
+  if (!anthropic) {
+    if (!process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not set");
+    anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  }
+  return anthropic;
+}
 
 export type QueueReading = {
   level: QueueLevel;
@@ -56,7 +66,7 @@ export async function analyzeQueue(
     .filter(Boolean)
     .join("\n");
 
-  const msg = await anthropic.messages.create({
+  const msg = await getAnthropic().messages.create({
     model,
     max_tokens: 300,
     messages: [

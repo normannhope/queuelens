@@ -10,7 +10,15 @@ import type { PlanId } from "@/lib/plans";
 // the Stripe Dashboard → Developers → Webhooks, listening for
 // checkout.session.completed and customer.subscription.deleted.
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", { apiVersion: "2025-02-24.acacia" });
+// Constructed lazily, inside the handler — not at module load — so a
+// deploy with no Stripe key yet (this app is designed to work with zero
+// paying customers and zero Stripe setup) never crashes the build or the
+// function. It only matters once you actually wire up Stripe (see
+// HANDOFF.md step 11).
+function getStripe(): Stripe | null {
+  if (!process.env.STRIPE_SECRET_KEY) return null;
+  return new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-02-24.acacia" });
+}
 
 // Map a Stripe Payment Link's price/product id to our PlanId. Fill this in
 // with the actual ids from your Stripe Dashboard once you've created the
@@ -23,12 +31,17 @@ const PRICE_TO_PLAN: Record<string, PlanId> = {
 };
 
 export async function POST(req: NextRequest) {
+  const stripe = getStripe();
+  if (!stripe || !process.env.STRIPE_WEBHOOK_SECRET) {
+    return NextResponse.json({ error: "Stripe is not configured yet" }, { status: 503 });
+  }
+
   const sig = req.headers.get("stripe-signature");
   const rawBody = await req.text();
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(rawBody, sig!, process.env.STRIPE_WEBHOOK_SECRET!);
+    event = stripe.webhooks.constructEvent(rawBody, sig!, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err: any) {
     console.error("Stripe signature verification failed:", err.message);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
