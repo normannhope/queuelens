@@ -5,7 +5,7 @@ import { QueueBadge } from "@/components/QueueBadge";
 import { PinButton } from "@/components/PinButton";
 import { Reveal } from "@/components/Reveal";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic"; // always reads the DB fresh — this app has no reason to pre-render at build time (queue status is meant to be live), and forcing dynamic rendering means a deploy never depends on the database being reachable at build time.
 
 export default async function HubPage({ params }: { params: { slug: string } }) {
   const hub = await db.hub.findUnique({ where: { slug: params.slug } });

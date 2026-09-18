@@ -5,7 +5,7 @@ import { QueueBadge } from "@/components/QueueBadge";
 import { PinButton } from "@/components/PinButton";
 import { Reveal } from "@/components/Reveal";
 
-export const revalidate = 30; // directory can be briefly stale — analysis itself is on a slower cadence
+export const dynamic = "force-dynamic"; // always reads the DB fresh — no build-time dependency on the database
 
 export default async function DirectoryPage() {
   const hubs = await db.hub.findMany({
