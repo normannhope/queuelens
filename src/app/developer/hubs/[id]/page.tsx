@@ -48,6 +48,7 @@ export default function HubDetailPage({ params }: { params: { id: string } }) {
   if (!hub) return null;
 
   async function togglePublic() {
+    if (!hub) return;
     setBusy(true);
     setError(null);
     const res = await fetch(`/api/hubs/${hub.id}`, {
@@ -60,6 +61,7 @@ export default function HubDetailPage({ params }: { params: { id: string } }) {
   }
 
   async function analyzeNow() {
+    if (!hub) return;
     setBusy(true);
     setError(null);
     const res = await fetch(`/api/hubs/${hub.id}/analyze`, { method: "POST" });
