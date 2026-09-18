@@ -24,6 +24,24 @@ const FEATURES: Record<PlanId, string[]> = {
 export default function BillingPage() {
   const { account, loading } = useAccount("business");
   const [refreshing, setRefreshing] = useState(false);
+  const [showCode, setShowCode] = useState(false);
+  const [code, setCode] = useState("");
+  const [codeState, setCodeState] = useState<"idle" | "checking" | "error">("idle");
+
+  async function submitCode() {
+    setCodeState("checking");
+    const res = await fetch("/api/dev-unlock", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+    if (res.ok) {
+      window.location.reload();
+    } else {
+      setCodeState("error");
+    }
+  }
+
   if (loading) return null;
   if (!account) {
     if (typeof window !== "undefined") window.location.href = "/developer/login";
@@ -71,6 +89,31 @@ export default function BillingPage() {
             </button>
           </Reveal>
         )}
+
+        <Reveal delay={0.06}>
+          {!showCode ? (
+            <button onClick={() => setShowCode(true)} className="mt-4 block text-xs text-ink/40 underline dark:text-paper/40">
+              Have an access code?
+            </button>
+          ) : (
+            <div className="mt-4 flex max-w-xs items-center gap-2">
+              <input
+                type="text"
+                value={code}
+                onChange={(e) => {
+                  setCode(e.target.value);
+                  setCodeState("idle");
+                }}
+                placeholder="Code"
+                className="w-32 rounded-lg border border-ink/15 bg-transparent px-2 py-1 text-sm dark:border-paper/15"
+              />
+              <button onClick={submitCode} disabled={codeState === "checking" || !code} className="btn-ghost text-xs">
+                {codeState === "checking" ? "Checking…" : "Unlock"}
+              </button>
+              {codeState === "error" && <span className="text-xs text-red-500">Wrong code</span>}
+            </div>
+          )}
+        </Reveal>
 
         <div className="mt-8 grid gap-6 sm:grid-cols-3">
           {(Object.entries(PLANS) as [PlanId, typeof PLANS[PlanId]][]).map(([id, plan], i) => {
