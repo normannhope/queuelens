@@ -22,7 +22,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       if (d.error) { el.textContent = "Queue Lens: unavailable"; return; }
       var dot = "<span style='width:8px;height:8px;border-radius:50%;background:" + (colors[d.level] || "#999") + ";display:inline-block'></span>";
       el.innerHTML = dot + " " + (labels[d.level] || d.level) +
-        (d.waitMin != null ? " · ~" + d.waitMin + " min wait" : "");
+        (d.waitMin != null ? " · ~" + d.waitMin + " min wait" : "") +
+        (d.poweredByRequired ? " <a href='" + ${JSON.stringify(site)} + "' style='color:inherit;opacity:0.55;text-decoration:underline;margin-left:6px;' target='_blank' rel='noopener'>Queue Lens</a>" : "");
     })
     .catch(function () { el.textContent = "Queue Lens: unavailable"; });
 })();

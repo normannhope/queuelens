@@ -18,13 +18,21 @@
 // for your real numbers once it's running): Haiku 4.5 is about $1/$5 per
 // 1M input/output tokens. One analysis call ≈ 1,200 image tokens + ~200
 // prompt tokens in, ~100 tokens out ≈ $0.0017/call.
+//   FREE     (0 NOK/mo, 30-min cadence, 1 hub)     ≈ 48 calls/day  ≈ 1,440/mo  → ≈ $2.4/mo Claude cost — the price of distribution, see badge below
 //   STARTER  (149 NOK/mo, 20-min cadence, 1 hub)  ≈ 72 calls/day  ≈ 2,160/mo  → ≈ $3.7/mo Claude cost
 //   STANDARD (500 NOK/mo, 5-min cadence, 1 hub)    ≈ 288 calls/day ≈ 8,640/mo  → ≈ $14.7/mo Claude cost
 //   PROFESSIONAL (1600 NOK/mo, 5-min, up to 10 hubs) same per-hub rate as Standard, ×hub count → watch this one as hub count grows
 // That's Claude cost only (no fixed hosting/DB cost on the free tiers this
 // is built for) — Stripe takes its usual ~1.5-2.9% + a small fixed fee on
-// top when a plan is actually paid for.
-export type PlanId = "STARTER" | "STANDARD" | "PROFESSIONAL";
+// top when a plan is actually paid for (FREE has no Stripe involvement at
+// all — see api/plan/free/route.ts).
+//
+// FREE trades analysis for distribution: its hubs are always public (the API
+// routes force isPublic true and refuse to let it be turned off) and carry a
+// "Powered by Queue Lens" badge on the hub page and embed widget — that's
+// the deal, not a limitation to hide. There's no stripeLinkEnvVar for it;
+// activating it is a plain POST to /api/plan/free, no payment step.
+export type PlanId = "FREE" | "STARTER" | "STANDARD" | "PROFESSIONAL";
 
 export const PLANS: Record<
   PlanId,
@@ -33,13 +41,28 @@ export const PLANS: Record<
     priceNok: number;
     minIntervalMinutes: number; // how often this plan is allowed a fresh analysis
     maxHubs: number; // how many hubs one subscription of this plan may have
-    advancedOutput: boolean; // unlocks output customization + trend-aware analysis
+    advancedOutput: boolean; // unlocks output customization, trend-aware analysis, and staff webhook alerts
     model: string; // Anthropic model id used for this plan's analysis calls
     description: string;
     features: string[]; // shown on the billing page and the business landing page
-    stripeLinkEnvVar: string;
+    stripeLinkEnvVar?: string; // absent (FREE) means "no payment — activated directly"
   }
 > = {
+  FREE: {
+    label: "Free",
+    priceNok: 0,
+    minIntervalMinutes: 30,
+    maxHubs: 1,
+    advancedOutput: false,
+    model: "claude-haiku-4-5",
+    description: "A fresh read every 30 minutes, one hub, always public — free, forever, with a small badge.",
+    features: [
+      "1 hub",
+      "A fresh read every 30 minutes",
+      "Always public — directory listing + embed",
+      "Carries a \"Powered by Queue Lens\" badge",
+    ],
+  },
   STARTER: {
     label: "Starter",
     priceNok: 149,
@@ -91,5 +114,6 @@ export const PLANS: Record<
 };
 
 export function stripeLinkFor(plan: PlanId): string | undefined {
-  return process.env[PLANS[plan].stripeLinkEnvVar];
+  const envVar = PLANS[plan].stripeLinkEnvVar;
+  return envVar ? process.env[envVar] : undefined;
 }

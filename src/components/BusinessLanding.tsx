@@ -79,7 +79,7 @@ export function BusinessLanding() {
           {[
             { step: "1", title: "Create an account", body: "Free, no card needed yet." },
             { step: "2", title: "Pick a plan", body: "Decides how often Claude checks in, and how many hubs you can run." },
-            { step: "3", title: "Paste your webcam URL", body: "A direct image-snapshot link — most public webcams expose one." },
+            { step: "3", title: "Paste your webcam URL", body: "A direct image-snapshot link — most public webcams expose one. No camera yet? We'll help." },
             { step: "4", title: "Go live", body: "Embed it on your site, or flip it public to join the directory." },
           ].map((s, i) => (
             <Reveal key={s.step} delay={i * 0.06}>
@@ -120,6 +120,16 @@ export function BusinessLanding() {
                 </Link>
               </Reveal>
             ))}
+            <Reveal delay={Object.keys(PLANS).length * 0.08} className="card flex flex-col border-dashed border-ink/25 dark:border-paper/25">
+              <h3 className="font-display text-xl font-medium">Enterprise</h3>
+              <p className="mt-2 font-mono text-3xl font-semibold tabular-nums">Custom</p>
+              <p className="mt-3 text-sm text-ink/70 dark:text-paper/70">
+                Chains and multi-location businesses beyond 10 hubs — custom cadence, SLA, and invoicing.
+              </p>
+              <a href="mailto:hello@quelens.com?subject=Enterprise%20plan" className="btn-ghost mt-6">
+                Contact us
+              </a>
+            </Reveal>
           </div>
         </div>
       </section>

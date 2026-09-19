@@ -9,7 +9,10 @@ import { SUBJECTS } from "@/lib/subjects";
 export const revalidate = 30;
 
 export default async function HubPage({ params }: { params: { slug: string } }) {
-  const hub = await db.hub.findUnique({ where: { slug: params.slug } });
+  const hub = await db.hub.findUnique({
+    where: { slug: params.slug },
+    include: { business: { select: { plan: true } } },
+  });
   if (!hub || !hub.isPublic) notFound();
 
   const history = await db.analysis.findMany({
@@ -42,6 +45,14 @@ export default async function HubPage({ params }: { params: { slug: string } }) 
           <p className="mt-1 text-xs text-ink/40 dark:text-paper/40">
             {hub.lastAnalyzedAt ? `Last checked ${hub.lastAnalyzedAt.toLocaleTimeString()}` : "Not yet analyzed"}
           </p>
+          {hub.business.plan === "FREE" && (
+            <a
+              href="/"
+              className="mt-4 inline-block font-mono text-xs uppercase tracking-wide text-ink/40 underline hover:text-ink/60 dark:text-paper/40 dark:hover:text-paper/60"
+            >
+              Powered by Queue Lens
+            </a>
+          )}
         </Reveal>
 
         {history.length > 0 && (

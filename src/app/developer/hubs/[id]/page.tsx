@@ -28,6 +28,9 @@ type Hub = {
   showPeopleCount: boolean;
   showWaitMinutes: boolean;
   useTrendLearning: boolean;
+  staffAlertEnabled: boolean;
+  staffAlertWebhookUrl: string | null;
+  staffAlertThreshold: string;
 };
 type Analysis = { id: string; level: string; waitMin: number | null; summary: string; createdAt: string };
 
@@ -67,6 +70,13 @@ export default function HubDetailPage({ params }: { params: { id: string } }) {
   const [subjSaving, setSubjSaving] = useState(false);
   const [subjSaved, setSubjSaved] = useState(false);
 
+  // Staff webhook alerts — same draft-state-then-save pattern.
+  const [alertEnabled, setAlertEnabled] = useState(false);
+  const [alertWebhook, setAlertWebhook] = useState("");
+  const [alertThreshold, setAlertThreshold] = useState<"MEDIUM" | "LONG">("LONG");
+  const [alertSaving, setAlertSaving] = useState(false);
+  const [alertSaved, setAlertSaved] = useState(false);
+
   useEffect(() => setSiteUrl(window.location.origin), []);
 
   async function load() {
@@ -84,6 +94,9 @@ export default function HubDetailPage({ params }: { params: { id: string } }) {
       setOutTrend(d.hub.useTrendLearning);
       setSubjType(d.hub.subjectType);
       setSubjInstructions(d.hub.instructions || "");
+      setAlertEnabled(d.hub.staffAlertEnabled);
+      setAlertWebhook(d.hub.staffAlertWebhookUrl || "");
+      setAlertThreshold(d.hub.staffAlertThreshold === "MEDIUM" ? "MEDIUM" : "LONG");
     }
   }
   useEffect(() => {
@@ -98,9 +111,10 @@ export default function HubDetailPage({ params }: { params: { id: string } }) {
   if (!hub) return null;
 
   const plan = account.plan && account.plan !== "NONE" ? PLANS[account.plan as PlanId] : null;
+  const isFreePlan = account.plan === "FREE";
 
   async function togglePublic() {
-    if (!hub) return;
+    if (!hub || isFreePlan) return; // Free hubs stay public — see setup notes on the Free plan card.
     setBusy(true);
     setError(null);
     const res = await fetch(`/api/hubs/${hub.id}`, {
@@ -137,6 +151,27 @@ export default function HubDetailPage({ params }: { params: { id: string } }) {
       setSubjSaved(true);
       load();
       setTimeout(() => setSubjSaved(false), 2500);
+    }
+  }
+
+  async function saveStaffAlerts() {
+    if (!hub) return;
+    setAlertSaving(true);
+    setAlertSaved(false);
+    const res = await fetch(`/api/hubs/${hub.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        staffAlertEnabled: alertEnabled,
+        staffAlertWebhookUrl: alertWebhook,
+        staffAlertThreshold: alertThreshold,
+      }),
+    });
+    setAlertSaving(false);
+    if (res.ok) {
+      setAlertSaved(true);
+      load();
+      setTimeout(() => setAlertSaved(false), 2500);
     }
   }
 
@@ -195,9 +230,9 @@ export default function HubDetailPage({ params }: { params: { id: string } }) {
         <Reveal>
           <div className="flex items-center justify-between">
             <h1 className="font-display text-3xl font-semibold">{hub.name}</h1>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={hub.isPublic} onChange={togglePublic} disabled={busy} />
-              Public (in directory + embeddable)
+            <label className={`flex items-center gap-2 text-sm ${isFreePlan ? "opacity-70" : ""}`}>
+              <input type="checkbox" checked={hub.isPublic} onChange={togglePublic} disabled={busy || isFreePlan} />
+              {isFreePlan ? "Public — required on the Free plan" : "Public (in directory + embeddable)"}
             </label>
           </div>
         </Reveal>
@@ -222,6 +257,15 @@ export default function HubDetailPage({ params }: { params: { id: string } }) {
               {plan && <span>Cadence: every {plan.minIntervalMinutes} min</span>}
               {hub.lastAnalyzedAt && <span>Last checked: {new Date(hub.lastAnalyzedAt).toLocaleTimeString()}</span>}
             </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={hub.webcamUrl}
+              alt=""
+              className="mt-3 h-28 w-full rounded-lg border border-ink/10 object-cover dark:border-paper/10"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+              }}
+            />
           </div>
         </Reveal>
 
@@ -477,8 +521,96 @@ export default function HubDetailPage({ params }: { params: { id: string } }) {
           </div>
         </Reveal>
 
+        <Reveal delay={0.16}>
+          <div className="card mt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-display text-lg font-medium">Staff alerts</h2>
+                <p className="mt-1 text-sm text-ink/60 dark:text-paper/60">
+                  {plan?.advancedOutput
+                    ? "Get a webhook ping the moment the queue gets busy — paste in a Slack, Discord, or Teams incoming webhook URL and it just works."
+                    : "Unlocks on Standard and Professional."}
+                </p>
+              </div>
+              {!plan?.advancedOutput && (
+                <a href="/developer/billing" className="btn-ghost !px-3 !py-1.5 text-xs shrink-0">
+                  Upgrade
+                </a>
+              )}
+            </div>
+
+            {plan?.advancedOutput ? (
+              <div className="mt-4 space-y-3">
+                <label className="flex items-center justify-between gap-4 text-sm">
+                  <span>
+                    Enable staff alerts
+                    <span className="block text-xs text-ink/40 dark:text-paper/40">
+                      At most once every 15 minutes, so it can't spam a channel.
+                    </span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={alertEnabled}
+                    onChange={(e) => setAlertEnabled(e.target.checked)}
+                    className="h-4 w-4 shrink-0"
+                  />
+                </label>
+                <div>
+                  <span className="label">Webhook URL</span>
+                  <input
+                    type="url"
+                    className="field"
+                    placeholder="https://hooks.slack.com/services/…"
+                    value={alertWebhook}
+                    onChange={(e) => setAlertWebhook(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <span className="label">Alert when queue reaches</span>
+                  <select
+                    className="field"
+                    value={alertThreshold}
+                    onChange={(e) => setAlertThreshold(e.target.value === "MEDIUM" ? "MEDIUM" : "LONG")}
+                  >
+                    <option value="MEDIUM">Moderate or busier</option>
+                    <option value="LONG">Long only</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-3 pt-1">
+                  <motion.button
+                    whileTap={{ scale: 0.96 }}
+                    onClick={saveStaffAlerts}
+                    disabled={alertSaving}
+                    className="btn-primary !px-4 !py-2 text-sm"
+                  >
+                    {alertSaving ? "Saving…" : "Save"}
+                  </motion.button>
+                  <AnimatePresence>
+                    {alertSaved && (
+                      <motion.span
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        className="text-sm text-status-empty"
+                      >
+                        Saved ✓
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            ) : (
+              <ul className="mt-4 space-y-1.5 text-sm text-ink/50 dark:text-paper/50">
+                <li>· A webhook ping to Slack/Discord/Teams/your own endpoint when a queue crosses a threshold</li>
+                <li>· Lets staff open another till or lane before customers even complain</li>
+              </ul>
+            )}
+          </div>
+        </Reveal>
+
         {hub.isPublic && (
-          <Reveal delay={0.15}>
+          <Reveal delay={0.18}>
             <div className="card mt-6">
               <h2 className="font-display text-lg font-medium">Embed on your own site</h2>
               <p className="mt-1 text-sm text-ink/60 dark:text-paper/60">Drop this where you want the live badge to show:</p>

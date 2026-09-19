@@ -8,8 +8,9 @@ import { PLANS, type PlanId } from "@/lib/plans";
 // The Payment Link URLs live in env vars (NEXT_PUBLIC_ so the browser can
 // read them) since Payment Links need no server code to redirect to. We
 // append client_reference_id so the Stripe webhook knows which business to
-// upgrade once payment completes — see api/stripe/webhook/route.ts.
-const LINKS: Record<PlanId, string | undefined> = {
+// upgrade once payment completes — see api/stripe/webhook/route.ts. FREE has
+// no entry here on purpose — it's not a Payment Link, see activateFree below.
+const LINKS: Partial<Record<PlanId, string>> = {
   STARTER: process.env.NEXT_PUBLIC_STRIPE_LINK_STARTER,
   STANDARD: process.env.NEXT_PUBLIC_STRIPE_LINK_STANDARD,
   PROFESSIONAL: process.env.NEXT_PUBLIC_STRIPE_LINK_PROFESSIONAL,
@@ -21,6 +22,14 @@ export default function BillingPage() {
   const [showCode, setShowCode] = useState(false);
   const [code, setCode] = useState("");
   const [codeState, setCodeState] = useState<"idle" | "checking" | "error">("idle");
+  const [activatingFree, setActivatingFree] = useState(false);
+
+  async function activateFree() {
+    setActivatingFree(true);
+    const res = await fetch("/api/plan/free", { method: "POST" });
+    setActivatingFree(false);
+    if (res.ok) window.location.reload();
+  }
 
   async function submitCode() {
     setCodeState("checking");
@@ -114,6 +123,7 @@ export default function BillingPage() {
             const link = LINKS[id];
             const href = link ? `${link}?client_reference_id=${account.id}` : undefined;
             const isCurrent = account.plan === id;
+            const isFree = id === "FREE";
             return (
               <Reveal key={id} delay={0.08 + i * 0.06} className={`card flex flex-col ${isCurrent ? "border-cyan ring-1 ring-cyan/40" : ""}`}>
                 <h3 className="font-display text-xl font-medium">{plan.label}</h3>
@@ -131,6 +141,10 @@ export default function BillingPage() {
                 </ul>
                 {isCurrent ? (
                   <span className="btn-ghost mt-6 pointer-events-none opacity-60">Current plan</span>
+                ) : isFree ? (
+                  <button onClick={activateFree} disabled={activatingFree} className="btn-primary mt-6">
+                    {activatingFree ? "Activating…" : "Start free"}
+                  </button>
                 ) : href ? (
                   <a href={href} className="btn-primary mt-6">
                     {hasPlan ? "Switch to this plan" : "Subscribe"}
@@ -143,6 +157,32 @@ export default function BillingPage() {
               </Reveal>
             );
           })}
+
+          <Reveal delay={0.08 + Object.keys(PLANS).length * 0.06} className="card flex flex-col border-dashed border-ink/25 dark:border-paper/25">
+            <h3 className="font-display text-xl font-medium">Enterprise</h3>
+            <p className="mt-2 font-mono text-3xl font-semibold tabular-nums">Custom</p>
+            <p className="mt-3 text-sm text-ink/70 dark:text-paper/70">
+              More than 10 hubs, a chain with many locations, or you need an invoice instead of a card — let's
+              talk.
+            </p>
+            <ul className="mt-4 flex-1 space-y-1.5 text-sm text-ink/70 dark:text-paper/70">
+              <li className="flex gap-2">
+                <span className="text-status-empty">✓</span>
+                <span>Unlimited hubs</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-status-empty">✓</span>
+                <span>Custom cadence &amp; SLA</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-status-empty">✓</span>
+                <span>Invoicing, not card payment</span>
+              </li>
+            </ul>
+            <a href="mailto:hello@quelens.com?subject=Enterprise%20plan" className="btn-ghost mt-6">
+              Contact us
+            </a>
+          </Reveal>
         </div>
       </section>
     </main>

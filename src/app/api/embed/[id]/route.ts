@@ -5,7 +5,10 @@ import { db } from "@/lib/db";
 // hub's slug (readable identity, not the internal cuid) so URLs look clean:
 // GET /api/embed/oslo-central-bakery-x9k2
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const hub = await db.hub.findUnique({ where: { slug: params.id } });
+  const hub = await db.hub.findUnique({
+    where: { slug: params.id },
+    include: { business: { select: { plan: true } } },
+  });
   if (!hub || !hub.isPublic) {
     return NextResponse.json({ error: "Not found or not public" }, { status: 404 });
   }
@@ -21,6 +24,9 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       waitMin: hub.showWaitMinutes ? hub.latestWaitMin : null,
       summary: hub.latestSummary,
       updatedAt: hub.lastAnalyzedAt,
+      // The Free plan's distribution deal extends to the embed widget, not
+      // just the hosted hub page — see widget.js/route.ts.
+      poweredByRequired: hub.business.plan === "FREE",
     },
     { headers: { "Access-Control-Allow-Origin": "*", "Cache-Control": "s-maxage=60" } },
   );

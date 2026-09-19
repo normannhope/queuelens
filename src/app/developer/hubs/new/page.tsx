@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { DevHeader } from "@/components/DevHeader";
 import { useAccount } from "@/lib/useAccount";
 import { SUBJECTS, type Subject } from "@/lib/subjects";
@@ -18,6 +19,7 @@ export default function NewHubPage() {
   }>({ name: "", address: "", category: "", webcamUrl: "", instructions: "", subjectType: "PEOPLE" });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [webcamStatus, setWebcamStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
 
   if (loading) return null;
   if (!account) {
@@ -45,9 +47,16 @@ export default function NewHubPage() {
       <DevHeader account={account} kind="business" links={[{ href: "/developer", label: "Hubs" }, { href: "/developer/billing", label: "Billing" }]} />
       <section className="container-page pb-20">
         <h1 className="mb-2 font-display text-3xl font-semibold">Add a hub</h1>
-        <p className="mb-6 max-w-lg text-ink/70 dark:text-paper/70">
+        <p className="mb-2 max-w-lg text-ink/70 dark:text-paper/70">
           The webcam URL must point directly at an image (a JPG/PNG snapshot endpoint), not a viewer page —
           many public webcams expose one at a URL ending in something like <code>/snapshot.jpg</code>.
+        </p>
+        <p className="mb-6 max-w-lg text-sm text-ink/50 dark:text-paper/50">
+          Not sure where to find that, or don't have a webcam yet?{" "}
+          <Link href="/developer/setup-guide" className="text-cyan underline">
+            Read the setup guide
+          </Link>
+          .
         </p>
         <form onSubmit={submit} className="card max-w-lg space-y-4">
           <div>
@@ -95,8 +104,35 @@ export default function NewHubPage() {
               required
               placeholder="https://example.com/cams/lobby/snapshot.jpg"
               value={form.webcamUrl}
-              onChange={(e) => setForm({ ...form, webcamUrl: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, webcamUrl: e.target.value });
+                setWebcamStatus(e.target.value ? "loading" : "idle");
+              }}
             />
+            {form.webcamUrl && (
+              <div className="mt-2 overflow-hidden rounded-lg border border-ink/10 dark:border-paper/10">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  key={form.webcamUrl}
+                  src={form.webcamUrl}
+                  alt="Webcam preview"
+                  className="block h-32 w-full object-cover bg-ink/5 dark:bg-paper/5"
+                  onLoad={() => setWebcamStatus("ok")}
+                  onError={() => setWebcamStatus("error")}
+                />
+                <p
+                  className={`px-2.5 py-1.5 text-xs ${
+                    webcamStatus === "error" ? "text-status-long" : "text-ink/50 dark:text-paper/50"
+                  }`}
+                >
+                  {webcamStatus === "error"
+                    ? "Couldn't load an image from this URL — make sure it points directly at a JPG/PNG, not a viewer page."
+                    : webcamStatus === "ok"
+                      ? "Looks good — this is roughly what Claude will see."
+                      : "Loading preview…"}
+                </p>
+              </div>
+            )}
           </div>
           <div>
             <label className="label">

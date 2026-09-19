@@ -67,7 +67,15 @@ export async function POST(req: NextRequest) {
   if (!body.success) return NextResponse.json({ error: body.error.issues[0]?.message }, { status: 400 });
 
   const hub = await db.hub.create({
-    data: { ...body.data, slug: slugify(body.data.name), businessId: session.sub },
+    data: {
+      ...body.data,
+      slug: slugify(body.data.name),
+      businessId: session.sub,
+      // The Free plan's whole deal is distribution — its hubs start (and
+      // stay, see the PATCH route) public, no opt-out. Every other plan
+      // keeps the normal "private until you flip it on" default.
+      ...(business.plan === "FREE" ? { isPublic: true } : {}),
+    },
   });
   return NextResponse.json({ hub });
 }

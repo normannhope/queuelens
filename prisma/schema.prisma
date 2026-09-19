@@ -26,6 +26,7 @@ model Business {
 
 enum Plan {
   NONE       // signed up, not paying — hubs cannot go live
+  FREE       // 0 NOK/mo — every 30 min, 1 hub, always public, carries the Queue Lens badge
   STARTER    // ~149 NOK/mo — analysis every 20 min, 1 hub
   STANDARD   // ~500 NOK/mo — analysis every 5 min, 1 hub, advanced output settings
   PROFESSIONAL // ~1600 NOK/mo — every 5 min, up to 10 hubs (cadence/hub caps/prices: see lib/plans.ts)
@@ -71,6 +72,17 @@ model Hub {
   showPeopleCount  Boolean @default(false) // expose the headcount estimate on the public hub page/embed
   showWaitMinutes  Boolean @default(true)  // expose the wait-time estimate on the public hub page/embed
   useTrendLearning Boolean @default(false) // feed recent readings back into the analysis prompt
+
+  // Staff-facing alerting — separate from the public customer-facing status.
+  // Also gated to advancedOutput plans (Standard/Professional). We POST a
+  // small JSON body (with a top-level "text" field so it doubles as a Slack/
+  // Discord/Teams incoming-webhook payload with zero configuration) to
+  // staffAlertWebhookUrl whenever the reading crosses staffAlertThreshold,
+  // at most once every 15 minutes — see notifyStaffIfDue in lib/runAnalysis.ts.
+  staffAlertEnabled    Boolean    @default(false)
+  staffAlertWebhookUrl String?
+  staffAlertThreshold  QueueLevel @default(LONG)
+  staffAlertLastSentAt DateTime?
 
   analyses      Analysis[]
   pins          Pin[]

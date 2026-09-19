@@ -44,6 +44,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     "showPeopleCount",
     "showWaitMinutes",
     "useTrendLearning",
+    "staffAlertEnabled",
+    "staffAlertWebhookUrl",
+    "staffAlertThreshold",
   ];
   const data: Record<string, unknown> = {};
   for (const k of allowed) if (k in body) data[k] = body[k];
@@ -53,18 +56,38 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (typeof data.subjectType === "string" && !["PEOPLE", "VEHICLES", "CUSTOM"].includes(data.subjectType)) {
     delete data.subjectType;
   }
+  if (typeof data.staffAlertThreshold === "string" && !["MEDIUM", "LONG"].includes(data.staffAlertThreshold)) {
+    delete data.staffAlertThreshold;
+  }
+  if (typeof data.staffAlertWebhookUrl === "string") {
+    const url = data.staffAlertWebhookUrl.trim();
+    // Empty clears it; anything else has to at least look like a URL — a bad
+    // webhook shouldn't silently sit there doing nothing forever.
+    data.staffAlertWebhookUrl = url === "" ? null : /^https:\/\//i.test(url) ? url : null;
+  }
 
-  // "Advanced output" fields (customizing what's publicly shown, and
-  // trend-aware analysis) are a Standard/Professional perk — a Starter
-  // business can't smuggle them in via a raw PATCH even though the UI
-  // already hides the controls.
-  const advancedFields = ["showPeopleCount", "useTrendLearning"] as const;
-  if (advancedFields.some((f) => f in data)) {
-    const business = await db.business.findUnique({ where: { id: session.sub } });
-    const advancedOutput = business && business.plan !== "NONE" ? PLANS[business.plan as PlanId].advancedOutput : false;
-    if (!advancedOutput) {
-      for (const f of advancedFields) delete data[f];
-    }
+  const business = await db.business.findUnique({ where: { id: session.sub } });
+  const advancedOutput = business && business.plan !== "NONE" ? PLANS[business.plan as PlanId].advancedOutput : false;
+
+  // "Advanced output" fields (customizing what's publicly shown, trend-aware
+  // analysis, and staff webhook alerts) are a Standard/Professional perk — a
+  // Starter or Free business can't smuggle them in via a raw PATCH even
+  // though the UI already hides the controls.
+  const advancedFields = [
+    "showPeopleCount",
+    "useTrendLearning",
+    "staffAlertEnabled",
+    "staffAlertWebhookUrl",
+    "staffAlertThreshold",
+  ] as const;
+  if (!advancedOutput) {
+    for (const f of advancedFields) delete data[f];
+  }
+
+  // The Free plan trades analysis for distribution — its hubs stay public
+  // and keep the badge, non-negotiable through this route.
+  if (data.isPublic === false && business?.plan === "FREE") {
+    delete data.isPublic;
   }
 
   const updated = await db.hub.update({ where: { id: hub.id }, data });

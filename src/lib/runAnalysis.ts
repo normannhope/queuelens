@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { analyzeQueue } from "@/lib/anthropic";
+import { analyzeQueue, type QueueReading } from "@/lib/anthropic";
 import { sendQueueAlertPush } from "@/lib/push";
 import { PLANS, type PlanId } from "@/lib/plans";
 import type { Hub, Plan, QueueLevel } from "@prisma/client";
@@ -58,7 +58,44 @@ export async function runAnalysisForHub(hub: Hub & { business?: { plan: Plan } }
   ]);
 
   await notifyPinsIfDue(hub, reading.level, reading.summary);
+  await notifyStaffIfDue(hub, reading, advancedOutput);
   return reading;
+}
+
+// Staff-facing alerting — separate from the customer-facing push above.
+// Standard/Professional only (same advancedOutput gate as output
+// customization). We POST a small JSON body with a top-level "text" field so
+// it works as a Slack/Discord/Teams incoming webhook with zero setup beyond
+// pasting the URL in — no email, no new account, nothing to implement on
+// their end.
+async function notifyStaffIfDue(hub: Hub, reading: QueueReading, advancedOutput: boolean) {
+  if (!advancedOutput || !hub.staffAlertEnabled || !hub.staffAlertWebhookUrl) return;
+  const crossed = LEVEL_RANK[reading.level] >= LEVEL_RANK[hub.staffAlertThreshold];
+  const cooldownOk =
+    !hub.staffAlertLastSentAt || Date.now() - hub.staffAlertLastSentAt.getTime() > 15 * 60 * 1000;
+  if (!crossed || !cooldownOk) return;
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://quelens.com";
+  try {
+    await fetch(hub.staffAlertWebhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: `${hub.name}: ${reading.level.toLowerCase()} — ${reading.summary}`,
+        hub: hub.name,
+        level: reading.level,
+        count: reading.count,
+        waitMin: reading.waitMin,
+        summary: reading.summary,
+        url: `${siteUrl}/hub/${hub.slug}`,
+      }),
+      signal: AbortSignal.timeout(5000),
+    });
+    await db.hub.update({ where: { id: hub.id }, data: { staffAlertLastSentAt: new Date() } });
+  } catch {
+    // A bad or unreachable webhook shouldn't break the analysis pipeline —
+    // just skip this cycle and try again next time the threshold is crossed.
+  }
 }
 
 async function notifyPinsIfDue(hub: Hub, level: QueueLevel, summary: string) {
