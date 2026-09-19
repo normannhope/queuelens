@@ -13,8 +13,12 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     {
       name: hub.name,
       level: hub.latestLevel ?? "UNKNOWN",
-      count: hub.latestCount,
-      waitMin: hub.latestWaitMin,
+      // Both of these are business-controlled (Settings → Analysis
+      // intelligence, Standard/Professional only) — a business that doesn't
+      // want an exact headcount shown publicly can turn it off without
+      // hiding the queue status itself.
+      count: hub.showPeopleCount ? hub.latestCount : null,
+      waitMin: hub.showWaitMinutes ? hub.latestWaitMin : null,
       summary: hub.latestSummary,
       updatedAt: hub.lastAnalyzedAt,
     },

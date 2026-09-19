@@ -26,9 +26,9 @@ model Business {
 
 enum Plan {
   NONE       // signed up, not paying — hubs cannot go live
-  STARTER    // ~149 NOK/mo — analysis every 30 min
-  STANDARD   // ~500 NOK/mo — analysis every 10 min
-  PROFESSIONAL // ~1600 NOK/mo — analysis every 2 min (cadence, prices: see lib/plans.ts)
+  STARTER    // ~149 NOK/mo — analysis every 20 min, 1 hub
+  STANDARD   // ~500 NOK/mo — analysis every 5 min, 1 hub, advanced output settings
+  PROFESSIONAL // ~1600 NOK/mo — every 5 min, up to 10 hubs (cadence/hub caps/prices: see lib/plans.ts)
 }
 
 // ---------- Hubs (one physical queue/location a business monitors) ----------
@@ -62,6 +62,14 @@ model Hub {
   activeStartHour    Int     @default(0)  // 0-23, inclusive
   activeEndHour      Int     @default(24) // 1-24, exclusive (24 = runs through midnight)
   utcOffsetMinutes   Int     @default(0)
+
+  // Output customization + trend awareness — gated to plans with
+  // advancedOutput (Standard/Professional, see lib/plans.ts). A Starter hub
+  // keeps these at their defaults regardless of what's stored here; the API
+  // route re-checks the plan on every write, this isn't just a UI gate.
+  showPeopleCount  Boolean @default(false) // expose the headcount estimate on the public hub page/embed
+  showWaitMinutes  Boolean @default(true)  // expose the wait-time estimate on the public hub page/embed
+  useTrendLearning Boolean @default(false) // feed recent readings back into the analysis prompt
 
   analyses      Analysis[]
   pins          Pin[]

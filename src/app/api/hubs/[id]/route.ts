@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { readSession } from "@/lib/auth";
+import { PLANS, type PlanId } from "@/lib/plans";
 
 async function ownedHub(id: string, businessId: string) {
   const hub = await db.hub.findUnique({ where: { id } });
@@ -39,12 +40,28 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     "activeStartHour",
     "activeEndHour",
     "utcOffsetMinutes",
+    "showPeopleCount",
+    "showWaitMinutes",
+    "useTrendLearning",
   ];
   const data: Record<string, unknown> = {};
   for (const k of allowed) if (k in body) data[k] = body[k];
 
   if (typeof data.activeStartHour === "number") data.activeStartHour = Math.min(23, Math.max(0, data.activeStartHour));
   if (typeof data.activeEndHour === "number") data.activeEndHour = Math.min(24, Math.max(1, data.activeEndHour));
+
+  // "Advanced output" fields (customizing what's publicly shown, and
+  // trend-aware analysis) are a Standard/Professional perk — a Starter
+  // business can't smuggle them in via a raw PATCH even though the UI
+  // already hides the controls.
+  const advancedFields = ["showPeopleCount", "useTrendLearning"] as const;
+  if (advancedFields.some((f) => f in data)) {
+    const business = await db.business.findUnique({ where: { id: session.sub } });
+    const advancedOutput = business && business.plan !== "NONE" ? PLANS[business.plan as PlanId].advancedOutput : false;
+    if (!advancedOutput) {
+      for (const f of advancedFields) delete data[f];
+    }
+  }
 
   const updated = await db.hub.update({ where: { id: hub.id }, data });
   return NextResponse.json({ hub: updated });

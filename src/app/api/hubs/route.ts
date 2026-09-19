@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { readSession } from "@/lib/auth";
+import { PLANS, type PlanId } from "@/lib/plans";
 
 function slugify(name: string) {
   return (
@@ -43,6 +44,20 @@ export async function POST(req: NextRequest) {
   if (business.plan === "NONE") {
     return NextResponse.json(
       { error: "Pick a plan before creating a hub — see the billing tab." },
+      { status: 402 },
+    );
+  }
+
+  const maxHubs = PLANS[business.plan as PlanId].maxHubs;
+  const hubCount = await db.hub.count({ where: { businessId: business.id } });
+  if (hubCount >= maxHubs) {
+    return NextResponse.json(
+      {
+        error:
+          maxHubs === 1
+            ? "Your plan covers 1 hub. Upgrade to Professional for up to 10."
+            : `Your plan covers up to ${maxHubs} hubs — you're at the limit.`,
+      },
       { status: 402 },
     );
   }

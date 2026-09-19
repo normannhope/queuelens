@@ -23,6 +23,9 @@ type Hub = {
   activeStartHour: number;
   activeEndHour: number;
   utcOffsetMinutes: number;
+  showPeopleCount: boolean;
+  showWaitMinutes: boolean;
+  useTrendLearning: boolean;
 };
 type Analysis = { id: string; level: string; waitMin: number | null; summary: string; createdAt: string };
 
@@ -47,6 +50,14 @@ export default function HubDetailPage({ params }: { params: { id: string } }) {
   const [schedSaving, setSchedSaving] = useState(false);
   const [schedSaved, setSchedSaved] = useState(false);
 
+  // Same pattern for the output/intelligence toggles — local draft state,
+  // one explicit save.
+  const [outPeopleCount, setOutPeopleCount] = useState(false);
+  const [outWaitMinutes, setOutWaitMinutes] = useState(true);
+  const [outTrend, setOutTrend] = useState(false);
+  const [outSaving, setOutSaving] = useState(false);
+  const [outSaved, setOutSaved] = useState(false);
+
   useEffect(() => setSiteUrl(window.location.origin), []);
 
   async function load() {
@@ -59,6 +70,9 @@ export default function HubDetailPage({ params }: { params: { id: string } }) {
       setSchedStart(d.hub.activeStartHour);
       setSchedEnd(d.hub.activeEndHour);
       setSchedOffset(d.hub.utcOffsetMinutes);
+      setOutPeopleCount(d.hub.showPeopleCount);
+      setOutWaitMinutes(d.hub.showWaitMinutes);
+      setOutTrend(d.hub.useTrendLearning);
     }
   }
   useEffect(() => {
@@ -117,6 +131,27 @@ export default function HubDetailPage({ params }: { params: { id: string } }) {
       setSchedSaved(true);
       load();
       setTimeout(() => setSchedSaved(false), 2500);
+    }
+  }
+
+  async function saveOutputSettings() {
+    if (!hub) return;
+    setOutSaving(true);
+    setOutSaved(false);
+    const res = await fetch(`/api/hubs/${hub.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        showPeopleCount: outPeopleCount,
+        showWaitMinutes: outWaitMinutes,
+        useTrendLearning: outTrend,
+      }),
+    });
+    setOutSaving(false);
+    if (res.ok) {
+      setOutSaved(true);
+      load();
+      setTimeout(() => setOutSaved(false), 2500);
     }
   }
 
@@ -256,6 +291,97 @@ export default function HubDetailPage({ params }: { params: { id: string } }) {
                 )}
               </AnimatePresence>
             </div>
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.13}>
+          <div className="card mt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-display text-lg font-medium">Analysis intelligence</h2>
+                <p className="mt-1 text-sm text-ink/60 dark:text-paper/60">
+                  {plan?.advancedOutput
+                    ? "Control what the public sees, and let readings learn from recent history."
+                    : "Unlocks on Standard and Professional."}
+                </p>
+              </div>
+              {!plan?.advancedOutput && (
+                <a href="/developer/billing" className="btn-ghost !px-3 !py-1.5 text-xs shrink-0">
+                  Upgrade
+                </a>
+              )}
+            </div>
+
+            {plan?.advancedOutput ? (
+              <div className="mt-4 space-y-3">
+                <label className="flex items-center justify-between gap-4 text-sm">
+                  <span>
+                    Show wait-time estimate publicly
+                    <span className="block text-xs text-ink/40 dark:text-paper/40">On the hub page and embed/API.</span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={outWaitMinutes}
+                    onChange={(e) => setOutWaitMinutes(e.target.checked)}
+                    className="h-4 w-4 shrink-0"
+                  />
+                </label>
+                <label className="flex items-center justify-between gap-4 text-sm">
+                  <span>
+                    Show headcount estimate publicly
+                    <span className="block text-xs text-ink/40 dark:text-paper/40">The exact "~N people waiting" figure.</span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={outPeopleCount}
+                    onChange={(e) => setOutPeopleCount(e.target.checked)}
+                    className="h-4 w-4 shrink-0"
+                  />
+                </label>
+                <label className="flex items-center justify-between gap-4 text-sm">
+                  <span>
+                    Learn from recent readings
+                    <span className="block text-xs text-ink/40 dark:text-paper/40">
+                      Feeds the last few readings back in so Claude can judge the trend, not just this one frame.
+                    </span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={outTrend}
+                    onChange={(e) => setOutTrend(e.target.checked)}
+                    className="h-4 w-4 shrink-0"
+                  />
+                </label>
+
+                <div className="flex items-center gap-3 pt-1">
+                  <motion.button
+                    whileTap={{ scale: 0.96 }}
+                    onClick={saveOutputSettings}
+                    disabled={outSaving}
+                    className="btn-primary !px-4 !py-2 text-sm"
+                  >
+                    {outSaving ? "Saving…" : "Save"}
+                  </motion.button>
+                  <AnimatePresence>
+                    {outSaved && (
+                      <motion.span
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        className="text-sm text-status-empty"
+                      >
+                        Saved ✓
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            ) : (
+              <ul className="mt-4 space-y-1.5 text-sm text-ink/50 dark:text-paper/50">
+                <li>· Choose whether wait-time and headcount show publicly</li>
+                <li>· Let analysis learn from recent readings, not just one frame</li>
+              </ul>
+            )}
           </div>
         </Reveal>
 

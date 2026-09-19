@@ -10,17 +10,7 @@ import type { QueueLevel } from "@prisma/client";
 // a timer, which is the whole reason this is a real deployed app and not
 // just a page on claude.ai (see the handoff notes).
 
-// Built lazily, on first real use — not at module import — so importing
-// this file (which happens indirectly on every build, via runAnalysis.ts)
-// never crashes even if ANTHROPIC_API_KEY is momentarily unset.
-let anthropic: Anthropic | null = null;
-function getAnthropic(): Anthropic {
-  if (!anthropic) {
-    if (!process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not set");
-    anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  }
-  return anthropic;
-}
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export type QueueReading = {
   level: QueueLevel;
@@ -47,26 +37,42 @@ async function fetchAndShrinkSnapshot(url: string): Promise<{ data: string; medi
   return { data: resized.toString("base64"), mediaType: "image/jpeg" };
 }
 
+// A trimmed slice of recent readings, oldest first — only ever passed for
+// hubs with useTrendLearning on (Standard/Professional). Kept tiny
+// (level + count + a relative timestamp) since it rides along on every
+// single analysis call and directly adds to cost.
+export type RecentReading = { level: QueueLevel; count: number | null; minutesAgo: number };
+
 export async function analyzeQueue(
   webcamUrl: string,
   instructions?: string | null,
   model: string = "claude-haiku-4-5",
+  recentHistory?: RecentReading[],
 ): Promise<QueueReading> {
   const { data, mediaType } = await fetchAndShrinkSnapshot(webcamUrl);
 
+  const trendBlock =
+    recentHistory && recentHistory.length > 0
+      ? [
+          "Recent readings for this same location, oldest first (use these only to judge the trend — rising, falling, or steady — and to sanity-check your count; the image in front of you is always the source of truth for the current level):",
+          ...recentHistory.map((r) => `- ${r.minutesAgo} min ago: ${r.level}${r.count != null ? `, ~${r.count} people` : ""}`),
+        ].join("\n")
+      : null;
+
   const prompt = [
-    "You are analyzing a single still frame from a public webcam to estimate a queue/line/crowd status.",
+    "You are analyzing a single still frame from a public webcam to estimate a queue/line/crowd status for a real customer deciding whether to go right now.",
     instructions ? `Business-provided context: ${instructions}` : null,
-    "Look at the image and estimate: how many people are waiting in a line or crowded cluster, ",
-    "a rough wait-time estimate in minutes (assume ~2 minutes served per person unless the scene suggests otherwise), ",
-    'and classify the level as one of exactly: "EMPTY", "SHORT", "MEDIUM", "LONG". ',
-    "If the image is unclear, dark, empty of any queue-relevant content, or you cannot tell, use \"UNKNOWN\" and null counts — never guess with false confidence.",
+    "Be conservative and calibrated, not trigger-happy. Most frames of most businesses most of the time show no meaningful line — default toward EMPTY or SHORT unless the image clearly shows an actual queue or crowd. Do not count: staff, people just walking past, people browsing shelves/seated at tables, or anyone not clearly waiting in a line or holding area. A single ambiguous shape, a shadow, or a shot that's too dark/blurry to be sure is NOT evidence of a line.",
+    "Use this headcount-to-level scale as your default, and only deviate if the specific business context above says otherwise: 0 people waiting = EMPTY. 1-3 = SHORT. 4-8 = MEDIUM. 9+ or a line clearly out the door = LONG.",
+    "Estimate a rough wait time in minutes from the headcount (assume ~2 minutes served per person unless the scene or context suggests a faster/slower business), and pick the level as one of exactly: \"EMPTY\", \"SHORT\", \"MEDIUM\", \"LONG\".",
+    "If the image is unclear, dark, empty of any queue-relevant content, or you genuinely cannot tell, use \"UNKNOWN\" and null counts — never guess with false confidence just to fill in a number.",
+    trendBlock,
     "Reply with ONLY a JSON object: {\"level\": string, \"count\": number|null, \"waitMin\": number|null, \"summary\": string (max 100 chars, plain language for a customer deciding whether to go now)}",
   ]
     .filter(Boolean)
     .join("\n");
 
-  const msg = await getAnthropic().messages.create({
+  const msg = await anthropic.messages.create({
     model,
     max_tokens: 300,
     messages: [

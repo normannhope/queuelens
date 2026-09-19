@@ -5,7 +5,7 @@ import { QueueBadge } from "@/components/QueueBadge";
 import { PinButton } from "@/components/PinButton";
 import { Reveal } from "@/components/Reveal";
 
-export const dynamic = "force-dynamic"; // always reads the DB fresh — this app has no reason to pre-render at build time (queue status is meant to be live), and forcing dynamic rendering means a deploy never depends on the database being reachable at build time.
+export const revalidate = 30;
 
 export default async function HubPage({ params }: { params: { slug: string } }) {
   const hub = await db.hub.findUnique({ where: { slug: params.slug } });
@@ -29,9 +29,12 @@ export default async function HubPage({ params }: { params: { slug: string } }) 
           {hub.address && <p className="mt-1 text-ink/60 dark:text-paper/60">{hub.address}</p>}
 
           <div className="mt-6 flex items-center gap-3">
-            <QueueBadge level={hub.latestLevel} waitMin={hub.latestWaitMin} />
+            <QueueBadge level={hub.latestLevel} waitMin={hub.showWaitMinutes ? hub.latestWaitMin : null} />
             <PinButton hubId={hub.id} />
           </div>
+          {hub.showPeopleCount && hub.latestCount != null && (
+            <p className="mt-2 text-sm text-ink/60 dark:text-paper/60">~{hub.latestCount} people waiting</p>
+          )}
           {hub.latestSummary && <p className="mt-3 text-ink/70 dark:text-paper/70">{hub.latestSummary}</p>}
           <p className="mt-1 text-xs text-ink/40 dark:text-paper/40">
             {hub.lastAnalyzedAt ? `Last checked ${hub.lastAnalyzedAt.toLocaleTimeString()}` : "Not yet analyzed"}
@@ -45,7 +48,7 @@ export default async function HubPage({ params }: { params: { slug: string } }) 
               {history.map((a) => (
                 <li key={a.id} className="flex items-center justify-between py-2.5 text-sm">
                   <span className="text-ink/50 dark:text-paper/50">{a.createdAt.toLocaleTimeString()}</span>
-                  <QueueBadge level={a.level} waitMin={a.waitMin} />
+                  <QueueBadge level={a.level} waitMin={hub.showWaitMinutes ? a.waitMin : null} />
                 </li>
               ))}
             </ul>

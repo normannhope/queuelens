@@ -15,7 +15,25 @@ export async function runAnalysisForHub(hub: Hub & { business?: { plan: Plan } }
   const plan = hub.business?.plan;
   const model = plan && plan !== "NONE" ? PLANS[plan as PlanId].model : undefined;
 
-  const reading = await analyzeQueue(hub.webcamUrl, hub.instructions, model);
+  // Trend-aware analysis is a Standard/Professional perk (lib/plans.ts
+  // advancedOutput) — the hub-level toggle only takes effect on a plan that
+  // actually unlocks it, same double-check as the PATCH route.
+  const advancedOutput = plan && plan !== "NONE" ? PLANS[plan as PlanId].advancedOutput : false;
+  let recentHistory: { level: QueueLevel; count: number | null; minutesAgo: number }[] | undefined;
+  if (hub.useTrendLearning && advancedOutput) {
+    const recent = await db.analysis.findMany({
+      where: { hubId: hub.id },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    });
+    const now = Date.now();
+    recentHistory = recent
+      .slice()
+      .reverse()
+      .map((a) => ({ level: a.level, count: a.count, minutesAgo: Math.round((now - a.createdAt.getTime()) / 60_000) }));
+  }
+
+  const reading = await analyzeQueue(hub.webcamUrl, hub.instructions, model, recentHistory);
 
   await db.$transaction([
     db.analysis.create({

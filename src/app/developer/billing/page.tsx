@@ -15,12 +15,6 @@ const LINKS: Record<PlanId, string | undefined> = {
   PROFESSIONAL: process.env.NEXT_PUBLIC_STRIPE_LINK_PROFESSIONAL,
 }; // must match stripeLinkEnvVar in lib/plans.ts
 
-const FEATURES: Record<PlanId, string[]> = {
-  STARTER: ["1 hub", "A fresh read every 30 minutes", "Public directory listing", "Embed snippet for your own site"],
-  STANDARD: ["Everything in Starter", "10-minute cadence — the sweet spot for most locations", "Priority-ish over Starter's read frequency"],
-  PROFESSIONAL: ["Everything in Standard", "2-minute cadence, near-live", "Best for high-traffic single locations"],
-};
-
 export default function BillingPage() {
   const { account, loading } = useAccount("business");
   const [refreshing, setRefreshing] = useState(false);
@@ -128,7 +122,7 @@ export default function BillingPage() {
                 </p>
                 <p className="mt-3 text-sm text-ink/70 dark:text-paper/70">{plan.description}</p>
                 <ul className="mt-4 flex-1 space-y-1.5 text-sm text-ink/70 dark:text-paper/70">
-                  {FEATURES[id].map((f) => (
+                  {plan.features.map((f) => (
                     <li key={f} className="flex gap-2">
                       <span className="text-status-empty">✓</span>
                       <span>{f}</span>

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { DevHeader } from "@/components/DevHeader";
 import { QueueBadge } from "@/components/QueueBadge";
 import { Reveal } from "@/components/Reveal";
+import { BusinessLanding } from "@/components/BusinessLanding";
 import { useAccount } from "@/lib/useAccount";
 import { PLANS } from "@/lib/plans";
 
@@ -27,12 +28,10 @@ export default function DeveloperDashboard() {
   }, [account]);
 
   if (loading) return null;
-  if (!account) {
-    if (typeof window !== "undefined") window.location.href = "/developer/login";
-    return null;
-  }
+  if (!account) return <BusinessLanding />;
 
   const plan = account.plan && account.plan !== "NONE" ? PLANS[account.plan as keyof typeof PLANS] : null;
+  const atHubLimit = !!plan && !!hubs && hubs.length >= plan.maxHubs;
 
   return (
     <main>
@@ -48,20 +47,25 @@ export default function DeveloperDashboard() {
         <Reveal>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <h1 className="font-display text-3xl font-semibold">Your hubs</h1>
-            {plan ? (
-              <Link href="/developer/hubs/new" className="btn-primary">
-                + New hub
-              </Link>
-            ) : (
+            {!plan ? (
               <Link href="/developer/billing" className="btn-primary">
                 Pick a plan to start
+              </Link>
+            ) : atHubLimit ? (
+              <a href="/developer/billing" className="btn-ghost text-sm">
+                At your hub limit — upgrade for more
+              </a>
+            ) : (
+              <Link href="/developer/hubs/new" className="btn-primary">
+                + New hub
               </Link>
             )}
           </div>
 
           {plan && (
             <p className="mt-2 text-sm text-ink/60 dark:text-paper/60">
-              {plan.label} plan · analysis every {plan.minIntervalMinutes || "~5"} min
+              {plan.label} plan · analysis every {plan.minIntervalMinutes} min · {hubs ? hubs.length : "…"}/{plan.maxHubs} hub
+              {plan.maxHubs === 1 ? "" : "s"} used
             </p>
           )}
         </Reveal>
