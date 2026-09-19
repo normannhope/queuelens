@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Hub" ADD COLUMN     "activeEndHour" INTEGER NOT NULL DEFAULT 24,
+ADD COLUMN     "activeHoursEnabled" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "activeStartHour" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "utcOffsetMinutes" INTEGER NOT NULL DEFAULT 0;
