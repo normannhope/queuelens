@@ -27,7 +27,7 @@ export default function DeveloperAboutPage() {
         kind="business"
         links={[
           { href: "/developer", label: "Hubs" },
-          { href: "/developer/billing", label: "Billing" },
+          { href: "/developer/settings", label: "Settings" },
         ]}
       />
       <section className="container-page pb-10 pt-2">
@@ -43,7 +43,7 @@ export default function DeveloperAboutPage() {
         </Reveal>
       </section>
 
-      <PlansOverview ctaHref="/developer/billing" ctaLabel="Manage plan" />
+      <PlansOverview ctaHref="/developer/settings" ctaLabel="Manage plan" />
 
       <section className="container-page py-16">
         <Reveal className="card flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -52,8 +52,8 @@ export default function DeveloperAboutPage() {
             <p className="mt-1 text-sm text-ink/70 dark:text-paper/70">Head back to your hubs, or adjust your plan.</p>
           </div>
           <div className="flex shrink-0 gap-3">
-            <Link href="/developer/billing" className="btn-ghost">
-              Billing
+            <Link href="/developer/settings" className="btn-ghost">
+              Settings
             </Link>
             <Link href="/developer" className="btn-primary">
               Your hubs

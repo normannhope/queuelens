@@ -40,7 +40,7 @@ export default function DeveloperDashboard() {
         kind="business"
         links={[
           { href: "/developer", label: "Hubs" },
-          { href: "/developer/billing", label: "Billing" },
+          { href: "/developer/settings", label: "Settings" },
         ]}
       />
       <section className="container-page pb-20">
@@ -48,11 +48,11 @@ export default function DeveloperDashboard() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <h1 className="font-display text-3xl font-semibold">Your hubs</h1>
             {!plan ? (
-              <Link href="/developer/billing" className="btn-primary">
+              <Link href="/developer/settings" className="btn-primary">
                 Pick a plan to start
               </Link>
             ) : atHubLimit ? (
-              <a href="/developer/billing" className="btn-ghost text-sm">
+              <a href="/developer/settings" className="btn-ghost text-sm">
                 At your hub limit — upgrade for more
               </a>
             ) : (

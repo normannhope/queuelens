@@ -29,20 +29,61 @@ body {
 }
 
 .btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-colors;
+  @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all duration-300;
 }
 .btn-primary {
-  @apply btn bg-ink text-paper hover:bg-ink-soft dark:bg-amber dark:text-ink dark:hover:opacity-90;
+  @apply btn bg-ink text-paper shadow-[0_0_0_0_rgba(95,207,196,0)] hover:-translate-y-0.5 hover:bg-ink-soft hover:shadow-[0_10px_28px_-8px_rgba(95,207,196,0.55)]
+    dark:bg-gradient-to-r dark:from-amber dark:via-amber dark:to-cyan dark:text-ink
+    dark:shadow-[0_0_18px_-6px_rgba(242,169,59,0.55)] dark:hover:shadow-[0_0_30px_-4px_rgba(242,169,59,0.8)];
 }
 .btn-ghost {
-  @apply btn border border-ink/15 text-ink hover:bg-ink/5 dark:border-paper/20 dark:text-paper dark:hover:bg-paper/10;
+  @apply btn border border-ink/15 text-ink hover:-translate-y-0.5 hover:border-cyan/60 hover:bg-ink/5 hover:shadow-[0_0_18px_-8px_rgba(95,207,196,0.5)]
+    dark:border-paper/20 dark:text-paper dark:hover:border-cyan/50 dark:hover:bg-paper/10 dark:hover:shadow-[0_0_18px_-8px_rgba(95,207,196,0.4)];
 }
 .card {
-  @apply rounded-xl2 border border-ink/10 bg-paper-soft/60 p-6 dark:border-paper/10 dark:bg-ink-soft;
+  @apply relative rounded-xl2 border border-ink/10 bg-paper-soft/60 p-6 backdrop-blur-sm transition-all duration-300
+    dark:border-paper/10 dark:bg-ink-soft/80 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)];
 }
 .field {
-  @apply w-full rounded-lg border border-ink/15 bg-paper px-3.5 py-2.5 text-sm outline-none focus:border-cyan dark:border-paper/15 dark:bg-ink;
+  @apply w-full rounded-lg border border-ink/15 bg-paper px-3.5 py-2.5 text-sm outline-none transition-shadow duration-200
+    focus:border-cyan focus:shadow-[0_0_0_3px_rgba(95,207,196,0.25)]
+    dark:border-paper/15 dark:bg-ink dark:focus:shadow-[0_0_0_3px_rgba(95,207,196,0.22)];
 }
 .label {
   @apply mb-1.5 block text-sm font-medium text-ink/70 dark:text-paper/70;
+}
+
+/* Soft glow blobs behind a hero section — the "futuristic" backdrop. Put a
+   position:relative + overflow-hidden ancestor around this, and give the
+   actual content a higher z-index (Reveal's className="relative z-10" is
+   enough) so it paints above, not behind, the glow. */
+.aurora {
+  @apply pointer-events-none absolute inset-0 overflow-hidden;
+}
+.aurora::before,
+.aurora::after {
+  content: "";
+  position: absolute;
+  width: 38rem;
+  height: 38rem;
+  border-radius: 9999px;
+  filter: blur(100px);
+}
+.aurora::before {
+  top: -16rem;
+  left: -12rem;
+  background: radial-gradient(circle, theme("colors.cyan.DEFAULT") 0%, transparent 70%);
+  opacity: 0.35;
+}
+.aurora::after {
+  top: -12rem;
+  right: -14rem;
+  background: radial-gradient(circle, theme("colors.amber.DEFAULT") 0%, transparent 70%);
+  opacity: 0.28;
+}
+.dark .aurora::before {
+  opacity: 0.22;
+}
+.dark .aurora::after {
+  opacity: 0.18;
 }

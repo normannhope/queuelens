@@ -24,7 +24,7 @@ export default function BusinessSignup() {
 
         <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_380px]">
           <Reveal delay={0.05}>
-            <AuthForm kind="business" mode="signup" redirectTo="/developer/billing" />
+            <AuthForm kind="business" mode="signup" redirectTo="/developer/settings" />
             <p className="mt-4 text-sm text-ink/60 dark:text-paper/60">
               Already have an account? <Link href="/developer/login" className="text-cyan underline">Sign in</Link>
             </p>
@@ -57,7 +57,7 @@ export default function BusinessSignup() {
                 ))}
               </div>
               <p className="mt-4 text-xs text-ink/50 dark:text-paper/50">
-                Cancel anytime from your billing page. No setup fees.
+                Cancel anytime from your settings page. No setup fees.
               </p>
             </div>
           </Reveal>

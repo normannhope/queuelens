@@ -11,11 +11,13 @@ export function QueueBadge({ level, waitMin }: { level: string | null | undefine
   const pulsing = level === "MEDIUM" || level === "LONG"; // draw the eye to the statuses worth acting on
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors duration-300 ${meta.className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-all duration-300 ${meta.className} ${
+        pulsing ? "shadow-[0_0_14px_-3px_currentColor]" : ""
+      }`}
     >
       <span className="relative flex h-2 w-2">
         {pulsing && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-60" />}
-        <span className="relative inline-flex h-2 w-2 rounded-full bg-current" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-current shadow-[0_0_8px_currentColor]" />
       </span>
       {meta.label}
       {waitMin != null && <span className="opacity-70">· ~{waitMin} min</span>}

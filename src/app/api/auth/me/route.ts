@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   if (kind === "business") {
     const business = await db.business.findUnique({
       where: { id: session.sub },
-      select: { id: true, name: true, email: true, plan: true, apiKey: true },
+      select: { id: true, name: true, email: true, plan: true, apiKey: true, createdAt: true },
     });
     return NextResponse.json({ account: business });
   } else {

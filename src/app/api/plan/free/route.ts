@@ -15,5 +15,11 @@ export async function POST() {
     where: { id: session.sub },
     data: { plan: "FREE", planRenewsAt: null },
   });
+  // Free hubs are always public — api/hubs/route.ts already enforces this
+  // for hubs created *after* switching to Free, but a hub created earlier
+  // (under NONE or a paid plan) keeps whatever isPublic it already had
+  // unless we flip it here too. Without this, switching to Free silently
+  // does nothing for existing hubs.
+  await db.hub.updateMany({ where: { businessId: session.sub }, data: { isPublic: true } });
   return NextResponse.json({ ok: true, plan: business.plan });
 }

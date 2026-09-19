@@ -34,6 +34,7 @@ const createSchema = z.object({
   webcamUrl: z.string().url(),
   instructions: z.string().max(500).optional(),
   subjectType: z.enum(["PEOPLE", "VEHICLES", "CUSTOM"]).optional(),
+  isPublic: z.boolean().optional(), // ignored (forced true) on Free — see below
 });
 
 export async function POST(req: NextRequest) {
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
   if (!business) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   if (business.plan === "NONE") {
     return NextResponse.json(
-      { error: "Pick a plan before creating a hub — see the billing tab." },
+      { error: "Pick a plan before creating a hub — see the settings tab." },
       { status: 402 },
     );
   }
@@ -73,8 +74,8 @@ export async function POST(req: NextRequest) {
       businessId: session.sub,
       // The Free plan's whole deal is distribution — its hubs start (and
       // stay, see the PATCH route) public, no opt-out. Every other plan
-      // keeps the normal "private until you flip it on" default.
-      ...(business.plan === "FREE" ? { isPublic: true } : {}),
+      // defaults to private unless the "Add a hub" form asked for public.
+      isPublic: business.plan === "FREE" ? true : !!body.data.isPublic,
     },
   });
   return NextResponse.json({ hub });

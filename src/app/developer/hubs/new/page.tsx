@@ -16,7 +16,8 @@ export default function NewHubPage() {
     webcamUrl: string;
     instructions: string;
     subjectType: Subject;
-  }>({ name: "", address: "", category: "", webcamUrl: "", instructions: "", subjectType: "PEOPLE" });
+    isPublic: boolean;
+  }>({ name: "", address: "", category: "", webcamUrl: "", instructions: "", subjectType: "PEOPLE", isPublic: false });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [webcamStatus, setWebcamStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
@@ -26,6 +27,8 @@ export default function NewHubPage() {
     if (typeof window !== "undefined") window.location.href = "/developer/login";
     return null;
   }
+
+  const isFreePlan = account.plan === "FREE";
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -44,7 +47,7 @@ export default function NewHubPage() {
 
   return (
     <main>
-      <DevHeader account={account} kind="business" links={[{ href: "/developer", label: "Hubs" }, { href: "/developer/billing", label: "Billing" }]} />
+      <DevHeader account={account} kind="business" links={[{ href: "/developer", label: "Hubs" }, { href: "/developer/settings", label: "Settings" }]} />
       <section className="container-page pb-20">
         <h1 className="mb-2 font-display text-3xl font-semibold">Add a hub</h1>
         <p className="mb-2 max-w-lg text-ink/70 dark:text-paper/70">
@@ -152,6 +155,25 @@ export default function NewHubPage() {
               value={form.instructions}
               onChange={(e) => setForm({ ...form, instructions: e.target.value })}
             />
+          </div>
+          <div className="rounded-xl border border-ink/15 p-4 dark:border-paper/15">
+            <label className={`flex items-start justify-between gap-4 text-sm ${isFreePlan ? "opacity-70" : ""}`}>
+              <span>
+                <span className="font-medium">Make this hub public</span>
+                <span className="mt-0.5 block text-xs text-ink/50 dark:text-paper/50">
+                  {isFreePlan
+                    ? "Required on the Free plan — every Free hub is public and lists in the directory, in exchange for free analysis."
+                    : "Public hubs join the directory and unlock the embed snippet. Leave this off to keep it private — visible only to you — until you're ready; you can flip it anytime from the hub's settings."}
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={isFreePlan || form.isPublic}
+                disabled={isFreePlan}
+                onChange={(e) => setForm({ ...form, isPublic: e.target.checked })}
+                className="mt-0.5 h-4 w-4 shrink-0"
+              />
+            </label>
           </div>
           {error && <p className="text-sm text-status-long">{error}</p>}
           <button disabled={busy} className="btn-primary w-full">

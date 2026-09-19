@@ -225,7 +225,7 @@ export default function HubDetailPage({ params }: { params: { id: string } }) {
 
   return (
     <main>
-      <DevHeader account={account} kind="business" links={[{ href: "/developer", label: "Hubs" }, { href: "/developer/billing", label: "Billing" }]} />
+      <DevHeader account={account} kind="business" links={[{ href: "/developer", label: "Hubs" }, { href: "/developer/settings", label: "Settings" }]} />
       <section className="container-page max-w-2xl pb-20">
         <Reveal>
           <div className="flex items-center justify-between">
@@ -440,7 +440,7 @@ export default function HubDetailPage({ params }: { params: { id: string } }) {
                 </p>
               </div>
               {!plan?.advancedOutput && (
-                <a href="/developer/billing" className="btn-ghost !px-3 !py-1.5 text-xs shrink-0">
+                <a href="/developer/settings" className="btn-ghost !px-3 !py-1.5 text-xs shrink-0">
                   Upgrade
                 </a>
               )}
@@ -533,7 +533,7 @@ export default function HubDetailPage({ params }: { params: { id: string } }) {
                 </p>
               </div>
               {!plan?.advancedOutput && (
-                <a href="/developer/billing" className="btn-ghost !px-3 !py-1.5 text-xs shrink-0">
+                <a href="/developer/settings" className="btn-ghost !px-3 !py-1.5 text-xs shrink-0">
                   Upgrade
                 </a>
               )}

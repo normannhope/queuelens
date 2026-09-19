@@ -13,8 +13,9 @@ export function BusinessLanding() {
     <main>
       <Nav />
 
-      <section className="container-page pt-10 pb-16">
-        <Reveal>
+      <section className="container-page relative overflow-hidden pt-10 pb-16">
+        <div className="aurora" aria-hidden="true" />
+        <Reveal className="relative z-10">
           <p className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-cyan">For businesses</p>
           <h1 className="max-w-2xl font-display text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl">
             Stop answering "how busy are you?" by hand.

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 
-export type Account = { id: string; email: string; name?: string; plan?: string; apiKey?: string } | null;
+export type Account = { id: string; email: string; name?: string; plan?: string; apiKey?: string; createdAt?: string } | null;
 
 // Client-side session check. Every /developer/* and /account/* page (besides
 // login/signup) uses this, and redirects to sign-in when `account` resolves

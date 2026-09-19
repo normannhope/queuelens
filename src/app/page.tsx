@@ -15,8 +15,9 @@ export default function Home() {
     <main>
       <Nav />
 
-      <section className="container-page pt-10 pb-20">
-        <Reveal>
+      <section className="container-page relative overflow-hidden pt-10 pb-20">
+        <div className="aurora" aria-hidden="true" />
+        <Reveal className="relative z-10">
           <p className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-cyan">AI queue analysis, from a public webcam</p>
           <h1 className="max-w-3xl font-display text-5xl font-semibold leading-[1.05] tracking-tight text-balance sm:text-6xl">
             See the line <span className="text-amber">before</span> you leave the house.
@@ -36,7 +37,7 @@ export default function Home() {
           </div>
         </Reveal>
 
-        <Reveal delay={0.1} className="mt-16 grid gap-3 sm:grid-cols-3">
+        <Reveal delay={0.1} className="relative z-10 mt-16 grid gap-3 sm:grid-cols-3">
           {SAMPLE_HUBS.map((h) => (
             <div key={h.name} className="card">
               <p className="font-mono text-xs uppercase tracking-wide text-ink/50 dark:text-paper/50">{h.category}</p>
