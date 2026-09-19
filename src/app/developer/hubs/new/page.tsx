@@ -3,11 +3,19 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { DevHeader } from "@/components/DevHeader";
 import { useAccount } from "@/lib/useAccount";
+import { SUBJECTS, type Subject } from "@/lib/subjects";
 
 export default function NewHubPage() {
   const { account, loading } = useAccount("business");
   const router = useRouter();
-  const [form, setForm] = useState({ name: "", address: "", category: "", webcamUrl: "", instructions: "" });
+  const [form, setForm] = useState<{
+    name: string;
+    address: string;
+    category: string;
+    webcamUrl: string;
+    instructions: string;
+    subjectType: Subject;
+  }>({ name: "", address: "", category: "", webcamUrl: "", instructions: "", subjectType: "PEOPLE" });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -60,6 +68,26 @@ export default function NewHubPage() {
             />
           </div>
           <div>
+            <label className="label">What are you monitoring?</label>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {(Object.entries(SUBJECTS) as [Subject, typeof SUBJECTS[Subject]][]).map(([id, s]) => (
+                <button
+                  type="button"
+                  key={id}
+                  onClick={() => setForm({ ...form, subjectType: id })}
+                  className={`rounded-xl border px-3 py-2.5 text-left text-sm transition-colors ${
+                    form.subjectType === id
+                      ? "border-cyan bg-cyan/10"
+                      : "border-ink/15 hover:bg-ink/5 dark:border-paper/15 dark:hover:bg-paper/10"
+                  }`}
+                >
+                  <span className="block font-medium">{s.label}</span>
+                  <span className="mt-0.5 block text-xs text-ink/50 dark:text-paper/50">{s.hint}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
             <label className="label">Webcam snapshot URL</label>
             <input
               type="url"
@@ -71,11 +99,20 @@ export default function NewHubPage() {
             />
           </div>
           <div>
-            <label className="label">Instructions for the AI (optional)</label>
+            <label className="label">
+              Instructions for the AI {form.subjectType === "CUSTOM" ? "" : "(optional)"}
+            </label>
             <textarea
               className="field"
               rows={3}
-              placeholder="e.g. Only count people past the red line; ignore staff behind the counter."
+              required={form.subjectType === "CUSTOM"}
+              placeholder={
+                form.subjectType === "VEHICLES"
+                  ? "e.g. Only count cars in the left two lanes; ignore the drop-off area on the right."
+                  : form.subjectType === "CUSTOM"
+                    ? "Describe exactly what to count in this frame, and what EMPTY/SHORT/MEDIUM/LONG should mean."
+                    : "e.g. Only count people past the red line; ignore staff behind the counter."
+              }
               value={form.instructions}
               onChange={(e) => setForm({ ...form, instructions: e.target.value })}
             />

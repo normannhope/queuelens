@@ -7,6 +7,7 @@ import { Reveal } from "@/components/Reveal";
 import { useAccount } from "@/lib/useAccount";
 import { PLANS, type PlanId } from "@/lib/plans";
 import { UTC_OFFSETS } from "@/lib/schedule";
+import { SUBJECTS, type Subject } from "@/lib/subjects";
 
 type Hub = {
   id: string;
@@ -14,6 +15,7 @@ type Hub = {
   slug: string;
   webcamUrl: string;
   instructions: string | null;
+  subjectType: Subject;
   isPublic: boolean;
   latestLevel: string | null;
   latestWaitMin: number | null;
@@ -58,6 +60,13 @@ export default function HubDetailPage({ params }: { params: { id: string } }) {
   const [outSaving, setOutSaving] = useState(false);
   const [outSaved, setOutSaved] = useState(false);
 
+  // What the AI is looking for — subject + freeform instructions. Same
+  // draft-state-then-save pattern as the other settings cards.
+  const [subjType, setSubjType] = useState<Subject>("PEOPLE");
+  const [subjInstructions, setSubjInstructions] = useState("");
+  const [subjSaving, setSubjSaving] = useState(false);
+  const [subjSaved, setSubjSaved] = useState(false);
+
   useEffect(() => setSiteUrl(window.location.origin), []);
 
   async function load() {
@@ -73,6 +82,8 @@ export default function HubDetailPage({ params }: { params: { id: string } }) {
       setOutPeopleCount(d.hub.showPeopleCount);
       setOutWaitMinutes(d.hub.showWaitMinutes);
       setOutTrend(d.hub.useTrendLearning);
+      setSubjType(d.hub.subjectType);
+      setSubjInstructions(d.hub.instructions || "");
     }
   }
   useEffect(() => {
@@ -110,6 +121,23 @@ export default function HubDetailPage({ params }: { params: { id: string } }) {
     setBusy(false);
     if (!res.ok) return setError(data.error || "Analysis failed.");
     load();
+  }
+
+  async function saveSubject() {
+    if (!hub) return;
+    setSubjSaving(true);
+    setSubjSaved(false);
+    const res = await fetch(`/api/hubs/${hub.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subjectType: subjType, instructions: subjInstructions }),
+    });
+    setSubjSaving(false);
+    if (res.ok) {
+      setSubjSaved(true);
+      load();
+      setTimeout(() => setSubjSaved(false), 2500);
+    }
   }
 
   async function saveSchedule() {
@@ -193,6 +221,68 @@ export default function HubDetailPage({ params }: { params: { id: string } }) {
               <span>Watching: {hub.webcamUrl}</span>
               {plan && <span>Cadence: every {plan.minIntervalMinutes} min</span>}
               {hub.lastAnalyzedAt && <span>Last checked: {new Date(hub.lastAnalyzedAt).toLocaleTimeString()}</span>}
+            </div>
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.08}>
+          <div className="card mt-6">
+            <h2 className="font-display text-lg font-medium">What Claude is counting</h2>
+            <p className="mt-1 text-sm text-ink/60 dark:text-paper/60">
+              People lines and vehicle queues look completely different in a frame — this tells Claude which one to
+              look for.
+            </p>
+            <div className="mt-4 grid gap-2 sm:grid-cols-3">
+              {(Object.entries(SUBJECTS) as [Subject, typeof SUBJECTS[Subject]][]).map(([id, s]) => (
+                <button
+                  type="button"
+                  key={id}
+                  onClick={() => setSubjType(id)}
+                  className={`rounded-xl border px-3 py-2.5 text-left text-sm transition-colors ${
+                    subjType === id
+                      ? "border-cyan bg-cyan/10"
+                      : "border-ink/15 hover:bg-ink/5 dark:border-paper/15 dark:hover:bg-paper/10"
+                  }`}
+                >
+                  <span className="block font-medium">{s.label}</span>
+                  <span className="mt-0.5 block text-xs text-ink/50 dark:text-paper/50">{s.hint}</span>
+                </button>
+              ))}
+            </div>
+            <div className="mt-4">
+              <span className="label">
+                Instructions for the AI {subjType === "CUSTOM" ? "" : "(optional)"}
+              </span>
+              <textarea
+                className="field"
+                rows={3}
+                placeholder={
+                  subjType === "VEHICLES"
+                    ? "e.g. Only count cars in the left two lanes; ignore the drop-off area on the right."
+                    : subjType === "CUSTOM"
+                      ? "Describe exactly what to count in this frame, and what EMPTY/SHORT/MEDIUM/LONG should mean."
+                      : "e.g. Only count people past the red line; ignore staff behind the counter."
+                }
+                value={subjInstructions}
+                onChange={(e) => setSubjInstructions(e.target.value)}
+              />
+            </div>
+            <div className="mt-4 flex items-center gap-3">
+              <motion.button whileTap={{ scale: 0.96 }} onClick={saveSubject} disabled={subjSaving} className="btn-primary !px-4 !py-2 text-sm">
+                {subjSaving ? "Saving…" : "Save"}
+              </motion.button>
+              <AnimatePresence>
+                {subjSaved && (
+                  <motion.span
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="text-sm text-status-empty"
+                  >
+                    Saved ✓
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </Reveal>
@@ -328,8 +418,10 @@ export default function HubDetailPage({ params }: { params: { id: string } }) {
                 </label>
                 <label className="flex items-center justify-between gap-4 text-sm">
                   <span>
-                    Show headcount estimate publicly
-                    <span className="block text-xs text-ink/40 dark:text-paper/40">The exact "~N people waiting" figure.</span>
+                    Show count estimate publicly
+                    <span className="block text-xs text-ink/40 dark:text-paper/40">
+                      The exact "~N {SUBJECTS[hub.subjectType].unit || "waiting"}" figure.
+                    </span>
                   </span>
                   <input
                     type="checkbox"

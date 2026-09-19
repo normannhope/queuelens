@@ -41,6 +41,7 @@ model Hub {
   category      String?  // "bakery", "clinic", "barbershop", etc — used for directory filtering
   webcamUrl     String   // direct image-snapshot URL (jpg/png), not a viewer page
   instructions  String?  // optional plain-language hint for the AI ("count people past the red line")
+  subjectType   Subject  @default(PEOPLE) // what the AI is actually counting — see lib/subjects.ts
   isPublic      Boolean  @default(false) // must be true to appear in directory / be readable via public embed
   businessId    String
   business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
@@ -81,6 +82,12 @@ enum QueueLevel {
   MEDIUM
   LONG
   UNKNOWN
+}
+
+enum Subject {
+  PEOPLE
+  VEHICLES
+  CUSTOM
 }
 
 model Analysis {

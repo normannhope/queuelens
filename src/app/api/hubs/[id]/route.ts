@@ -35,6 +35,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     "category",
     "webcamUrl",
     "instructions",
+    "subjectType",
     "isPublic",
     "activeHoursEnabled",
     "activeStartHour",
@@ -49,6 +50,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   if (typeof data.activeStartHour === "number") data.activeStartHour = Math.min(23, Math.max(0, data.activeStartHour));
   if (typeof data.activeEndHour === "number") data.activeEndHour = Math.min(24, Math.max(1, data.activeEndHour));
+  if (typeof data.subjectType === "string" && !["PEOPLE", "VEHICLES", "CUSTOM"].includes(data.subjectType)) {
+    delete data.subjectType;
+  }
 
   // "Advanced output" fields (customizing what's publicly shown, and
   // trend-aware analysis) are a Standard/Professional perk — a Starter

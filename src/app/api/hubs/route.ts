@@ -33,6 +33,7 @@ const createSchema = z.object({
   category: z.string().optional(),
   webcamUrl: z.string().url(),
   instructions: z.string().max(500).optional(),
+  subjectType: z.enum(["PEOPLE", "VEHICLES", "CUSTOM"]).optional(),
 });
 
 export async function POST(req: NextRequest) {

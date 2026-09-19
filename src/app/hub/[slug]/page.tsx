@@ -4,6 +4,7 @@ import { Nav } from "@/components/Nav";
 import { QueueBadge } from "@/components/QueueBadge";
 import { PinButton } from "@/components/PinButton";
 import { Reveal } from "@/components/Reveal";
+import { SUBJECTS } from "@/lib/subjects";
 
 export const revalidate = 30;
 
@@ -33,7 +34,9 @@ export default async function HubPage({ params }: { params: { slug: string } }) 
             <PinButton hubId={hub.id} />
           </div>
           {hub.showPeopleCount && hub.latestCount != null && (
-            <p className="mt-2 text-sm text-ink/60 dark:text-paper/60">~{hub.latestCount} people waiting</p>
+            <p className="mt-2 text-sm text-ink/60 dark:text-paper/60">
+              ~{hub.latestCount} {SUBJECTS[hub.subjectType].unit || "waiting"}
+            </p>
           )}
           {hub.latestSummary && <p className="mt-3 text-ink/70 dark:text-paper/70">{hub.latestSummary}</p>}
           <p className="mt-1 text-xs text-ink/40 dark:text-paper/40">

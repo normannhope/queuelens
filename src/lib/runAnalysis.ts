@@ -33,7 +33,7 @@ export async function runAnalysisForHub(hub: Hub & { business?: { plan: Plan } }
       .map((a) => ({ level: a.level, count: a.count, minutesAgo: Math.round((now - a.createdAt.getTime()) / 60_000) }));
   }
 
-  const reading = await analyzeQueue(hub.webcamUrl, hub.instructions, model, recentHistory);
+  const reading = await analyzeQueue(hub.webcamUrl, hub.instructions, model, recentHistory, hub.subjectType);
 
   await db.$transaction([
     db.analysis.create({
