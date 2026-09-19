@@ -20,6 +20,15 @@ function slugify(name: string) {
 export async function GET() {
   const session = await readSession("business");
   if (!session) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+
+  const business = await db.business.findUnique({ where: { id: session.sub }, select: { plan: true } });
+  if (business?.plan === "FREE") {
+    // Free hubs must always be public — heal any that drifted private (e.g.
+    // created under a different plan before the account switched to Free)
+    // so the dashboard's Public/Private badge is never stuck wrong.
+    await db.hub.updateMany({ where: { businessId: session.sub, isPublic: false }, data: { isPublic: true } });
+  }
+
   const hubs = await db.hub.findMany({
     where: { businessId: session.sub },
     orderBy: { createdAt: "desc" },

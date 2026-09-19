@@ -82,6 +82,10 @@ export default function HubDetailPage({ params }: { params: { id: string } }) {
   async function load() {
     const res = await fetch(`/api/hubs/${params.id}`);
     if (res.ok) {
+      // GET /api/hubs/[id] self-heals isPublic for Free-plan hubs server-side
+      // (see that route) — a hub stuck private from before the account
+      // switched to Free comes back already fixed, not stuck behind a
+      // locked checkbox with no way to act on it.
       const d = await res.json();
       setHub(d.hub);
       setAnalyses(d.analyses);

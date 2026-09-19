@@ -12,8 +12,20 @@ async function ownedHub(id: string, businessId: string) {
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await readSession("business");
   if (!session) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
-  const hub = await ownedHub(params.id, session.sub);
+  let hub = await ownedHub(params.id, session.sub);
   if (!hub) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  // Free hubs must always be public. One can still be stuck private — e.g.
+  // created under a different plan before the account switched to Free —
+  // and its checkbox is locked, so there'd be no way to fix it from the UI.
+  // Heal it here, server-side, the moment anyone reads it.
+  if (!hub.isPublic) {
+    const business = await db.business.findUnique({ where: { id: session.sub }, select: { plan: true } });
+    if (business?.plan === "FREE") {
+      hub = await db.hub.update({ where: { id: hub.id }, data: { isPublic: true } });
+    }
+  }
+
   const analyses = await db.analysis.findMany({
     where: { hubId: hub.id },
     orderBy: { createdAt: "desc" },
@@ -85,9 +97,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   // The Free plan trades analysis for distribution — its hubs stay public
-  // and keep the badge, non-negotiable through this route.
-  if (data.isPublic === false && business?.plan === "FREE") {
-    delete data.isPublic;
+  // and keep the badge, non-negotiable through this route. Force it true on
+  // *every* PATCH (not just one that explicitly tried to turn it off) so a
+  // hub that drifted private — e.g. created under a different plan before
+  // the account switched to Free — self-heals the moment anything on it is
+  // saved, rather than staying stuck with no way to fix it from the UI.
+  if (business?.plan === "FREE") {
+    data.isPublic = true;
   }
 
   const updated = await db.hub.update({ where: { id: hub.id }, data });

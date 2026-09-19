@@ -30,7 +30,11 @@ export function Wordmark({ className = "" }: { className?: string }) {
       <Logo />
       <span>
         Queue
-        <span className="bg-gradient-to-r from-cyan to-amber bg-clip-text text-transparent">Lens</span>
+        {/* A gradient bg-clip-text version of this looked broken in
+            practice — the fill didn't reliably paint inside the letter
+            shapes across browsers. A solid color with a glow gets the same
+            "pop" without that risk. */}
+        <span className="text-cyan drop-shadow-[0_0_10px_rgba(95,207,196,0.6)]">Lens</span>
       </span>
     </span>
   );
